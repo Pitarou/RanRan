@@ -141,11 +141,6 @@
           }
         },
         
-        
-        // I'll be wanting to get rid of this soon.
-        post_message: function () {
-          this._post_message.apply(this, arguments);
-        },
         _post_message: function (message) {
           this._worker.postMessage(message);
         },
