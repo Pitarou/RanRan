@@ -135,13 +135,6 @@
           this._worker.terminate();
         },
         
-        _register_handler: function(handler_name) {
-          this[handler_name] = function () {
-            this._post_message(name, arguments);
-          }
-        },
-        
-        // temporary solution
         _post_message: function(name, caller_arguments) {
           var args = arguments_to_array(caller_arguments);
           var message = {};
