@@ -30,8 +30,6 @@
         },
         
         testArgumentsToArray: function () {
-          var bootstrap_definitions = this.worker.get('worker.bootstrap');
-          var arguments_to_array = bootstrap_definitions[0].arguments_to_array;
           Y.Assert.isFunction(arguments_to_array, 'arguments_to_array created');
           function a_t_a() {
             return arguments_to_array(arguments);

@@ -10,7 +10,11 @@ The editor itself is a YUI wrapper for the [Ace][] editor, but RanRan extends th
 by presenting the editor in a YUI Panel which can be dragged, resized, and so on.
 
 This work will be presented as part of the final project for an MSc in
-e-Learning Technology. 
+e-Learning Technology.
+
+The current version also requires .php.  In particular, the file
+`yui-objects/worker/worker.js.php` uses php to insert the address of the YUI
+library.
 
 [YUI]: http://yuilibrary.com/ "Yahoo! User Interface - a JavaScript and CSS library for building richly interactive web applications"
 

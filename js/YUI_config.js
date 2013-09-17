@@ -42,8 +42,9 @@ function js_name(name) {
   return name;
 }
 
-function js_path(name) {
-  return name + '.js';
+function js_path(name, is_php) {
+  if (is_php) return name + '.js.php';
+  else return name + '.js';
 }
 
 function css_name(name) {
@@ -62,9 +63,9 @@ function test_path(name) {
   return name + '-test.js';
 }
 
-function add_js_module(obj, name, dependencies, css) {
+function add_js_module(obj, name, dependencies, css, is_php) {
   obj[js_name(name)] = {
-    path: js_path(name),
+    path: js_path(name, is_php),
     requires: css ? dependencies.concat([css_name(name)])
                   : dependencies,
   };
@@ -132,6 +133,6 @@ add_module_group('editor-panel', [
   'console-css',	
 	'ranran-base',
 ]);
-add_module_group('worker', ['message-processor', 'base'], false, true);
+add_module_group('worker', ['message-processor', 'base'], false, true, true);
 add_module_group('message-processor', [], false, true);
 })();
