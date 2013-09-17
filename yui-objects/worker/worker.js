@@ -56,7 +56,7 @@ if (typeof(window) === 'undefined' && typeof(global) === 'undefined') {
           } else {
             this._create_worker();
           }
-          this._add_definitions();
+          this._bootstrap();
         },
 
         destructor: function () {
@@ -88,6 +88,9 @@ if (typeof(window) === 'undefined' && typeof(global) === 'undefined') {
         },
         eval_and_assign_globals: function () {
           this.post('eval_and_assign_globals', arguments);
+        },
+        add_handlers: function() {
+          this.post('add_handlers', arguments);
         },
         
         _create_worker: function () {
@@ -135,12 +138,20 @@ if (typeof(window) === 'undefined' && typeof(global) === 'undefined') {
           };
         },
         
-        _add_definitions: function () {
-          var handler = function (name, definition) {
+        _bootstrap: function () {
+          function bootstrap_handler(name, definition) {
             this._worker.postMessage(name + ' = ' + definition);
           };
-          var definitions = this.get('definitions');
-          Y.RanRan.process_messages(this, handler, definitions);
+          var bootstrap_definitions = this.get('worker.bootstrap');
+          Y.RanRan.process_messages(this, bootstrap_handler, bootstrap_definitions);
+          
+          var handler_definitions = this.get('worker.handlers');
+          function add_handler_handler(name, definition) {
+            var message = {};
+            message[name] = definition.toString();
+            this.add_handlers(message);
+          }
+          Y.RanRan.process_messages(this, add_handler_handler, handler_definitions);
         },
       }, {
         ATTRS: {
@@ -150,60 +161,76 @@ if (typeof(window) === 'undefined' && typeof(global) === 'undefined') {
           },
           
           simulated: {value: false},
+          
+          worker: {
+            value: {
+              bootstrap: [
+                {
+                  process_messages: Y.RanRan.process_messages,
 
-          definitions: {value:
-            [
-              {
-                process_messages: Y.RanRan.process_messages,
-
-                arguments_to_array: arguments_to_array,
-
-                callbacks: '{}',
-                
-                handlers: '{}',
-
-              },
-            
-              {
-                eval_and_assign_globals: function () {
-                  var definitions = arguments_to_array(arguments);
-                  var handler = function (name, definition) {
-                    eval(name + " = " + definition);
-                  };
-                  process_messages(self, handler, definitions);
+                  arguments_to_array: arguments_to_array,
+                  
+                  callbacks: '{}',
+                  
                 },
-            
-                add_callbacks: function () {
-                  var definitions = arguments_to_array(arguments);
-                  var handler = function (name, definition) {
-                    var new_callback = eval('('+definition+')');
-                    if (!this.hasOwnProperty(name)) {
-                      this[name] = [];
+              
+                {
+                  add_handlers: function () {
+                    var definitions = arguments_to_array(arguments);
+                    function add_handler_handler(name, definition) {
+                      var code = 'handler["' + name + '"] = ' + definition;
+                      eval(code);
                     }
-                    this[name].push(new_callback);
-                  };
-                  process_messages(self.callbacks, handler, definitions);
+                    process_messages(this, add_handler_handler, definitions);
+                  },
                 },
+                {
+                  handler: '{add_handlers: add_handlers}',
+                },
+                {
+                  onmessage: function (event) {
+                    var message = event.data;
+                    process_messages(this, handler, message);
+                  },
+                },
+              ],
+          
+              handlers: [            
+                {
+                  eval_and_assign_globals: function () {
+                    var definitions = arguments_to_array(arguments);
+                    var handler = function (name, definition) {
+                      eval(name + " = " + definition);
+                    };
+                    process_messages(self, handler, definitions);
+                  },
+          
+                  add_callbacks: function () {
+                   var definitions = arguments_to_array(arguments);
+                   var handler = function (name, definition) {
+                     var new_callback = eval('('+definition+')');
+                      if (!this.hasOwnProperty(name)) {
+                       this[name] = [];
+                     }
+                     this[name].push(new_callback);
+                    };
+                    process_messages(self.callbacks, handler, definitions);
+                  },
 
-                call_callbacks: function () {
-                  var messages = arguments_to_array(arguments);
-                  process_messages(self.callbacks, self.callbacks, messages);
+                  call_callbacks: function () {
+                   var messages = arguments_to_array(arguments);
+                   process_messages(self.callbacks, self.callbacks, messages);
+                  },
                 },
-
-                handler: '{\n'+
-                  'eval_and_assign_globals: eval_and_assign_globals, '+
-                  'add_callbacks: add_callbacks, '+
-                  'call_callbacks: call_callbacks, '+
-                '}',
-              },
-              {
-                onmessage: function (event) {
-                  var message = event.data;
-                  process_messages(this, handler, message);
+                {
+                  onmessage: function (event) {
+                    var message = event.data;
+                    process_messages(this, handler, message);
+                  },
                 },
-              },
-            ],
-          },
+              ],
+            },
+          }
         },
       });
     }, '0.1', {requires: ['message-processor', 'base']});

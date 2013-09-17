@@ -22,16 +22,16 @@
           Y.Assert.isObject(this.worker, 'worker created');
           Y.Assert.isObject(callbacks, 'callbacks created');
           Y.Assert.isFunction(onmessage, 'simulated onmessage callback created');
-          Y.Assert.isFunction(postMessage, 'simulated postMessage created');
-          Y.Assert.isFunction(eval_and_assign_globals, 'eval_and_assign_globals created');
-          Y.Assert.isFunction(add_callbacks, 'add_callbacks created');
-          Y.Assert.isFunction(call_callbacks, 'call_callbacks created');
           Y.Assert.isFunction(process_messages, 'process_messages created');
+          Y.Assert.isFunction(postMessage, 'simulated postMessage created');
+          Y.Assert.isFunction(handler.eval_and_assign_globals, 'eval_and_assign_globals created');
+          Y.Assert.isFunction(handler.add_callbacks, 'add_callbacks created');
+          Y.Assert.isFunction(handler.call_callbacks, 'call_callbacks created');
         },
         
         testArgumentsToArray: function () {
-          var definitions = this.worker.get('definitions');
-          var arguments_to_array = definitions[0].arguments_to_array;
+          var bootstrap_definitions = this.worker.get('worker.bootstrap');
+          var arguments_to_array = bootstrap_definitions[0].arguments_to_array;
           Y.Assert.isFunction(arguments_to_array, 'arguments_to_array created');
           function a_t_a() {
             return arguments_to_array(arguments);
