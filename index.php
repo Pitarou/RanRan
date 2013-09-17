@@ -121,6 +121,7 @@ console.log(brainfuck('++++++++++[>+++++++>++++++++++>+++>+<<<<-]>++.>+.+++++++.
 	     panel = new Y.RanRan.EditorPanel({
 	       srcNode: '#editor-panel',
 	       render: true,
+	       collapsed: true,
 	     });
 	     worker = new Y.RanRan.Worker({simulated: true});
        Y.use('test-console', function (Y) {

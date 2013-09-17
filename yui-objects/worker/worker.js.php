@@ -53,10 +53,7 @@
      var definitions = arguments_to_array(arguments);
      var handler = function (name, definition) {
        var new_function = eval('('+definition+')');
-        if (!this.hasOwnProperty(name)) {
-         this[name] = [];
-       }
-       this[name].push(new_function);
+       this[name] = new_function;
       };
       process_messages(self.functions, handler, definitions);
     },
@@ -72,11 +69,18 @@
     process_messages(this, handler, message);
   };
   
+  function callback(name, args) {
+    var message_obj = {};
+    message_obj[name] = args;
+    postMessage({respond: message_obj});
+  };
+  
   var names_to_make_globally_visible = [
     'arguments_to_array',
     'functions',
     'handler',
     'onmessage',
+    'callback'
   ];
   
   function make_worker_definitions_globally_visible() {
@@ -128,7 +132,9 @@
           } else {
             this._create_worker();
           }
-          this.functions = [];
+          this._bind_onmessage();
+          this.functions = {};
+          this._responders = {};
         },
 
         destructor: function () {
@@ -176,14 +182,42 @@
           process_messages(this, register, args);
         },
         
+        add_callback_functions: function() {
+          var args = arguments_to_array(arguments);
+          function register(name, responder) {
+            this._responders[name] = responder;
+            var callback_definition =
+              'function () {\n' +
+              '  var args = arguments_to_array(arguments);\n' +
+              '  callback("' + name + '", args);\n' +
+              '}'
+            ;
+            var callbacks = {};
+            callbacks[name] = callback_definition;
+            this.add_functions(callbacks);
+          }
+          process_messages(this, register, args);
+        },
+        
         _create_worker: function () {
           var path = this.get('workerDefinitionPath');
           this._worker = new Worker(path);
-          this._worker.onmessage = Y.Bind(this, this._onmessage);
+        },
+        
+        _handler: {
+          respond: function () {
+            var args = arguments_to_array(arguments);
+            process_messages(this, this._responders, args);
+          },
         },
         
         _onmessage: function(event) {
-          console.log("onmessage:", event.data);
+          var message = event.data;
+          process_messages(this, this._handler, message);
+        },
+        
+        _bind_onmessage: function () {
+          this._worker.onmessage = Y.bind(this._onmessage, this);
         },
         
         // Create a simulated worker that runs
@@ -198,14 +232,14 @@
             },
             addEventListener: function (event, listener) {
               if (event === "message") {
-                onmessage = listener;
+                worker.onmessage = listener;
               }
             },
             terminate: function() {
             },
           };
           postMessage = function (data) {
-            worker.onmessage(data);
+            worker.onmessage({data: data});
           };
           make_worker_definitions_globally_visible();
           this._worker = worker;

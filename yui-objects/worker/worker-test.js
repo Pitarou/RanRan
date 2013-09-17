@@ -83,8 +83,8 @@
             }
           );
           Y.Assert.areSame(
-            functions.test_function1[0],
             'data1',
+            functions.test_function1,
             'add_functions does its job once'
           );
           Y.Assert.isNotUndefined(
@@ -92,24 +92,22 @@
             'add_functions registers once'
           );
           Y.Assert.areSame(
-            functions.test_function2[0],
-            'data2',
+            'data3',
+            functions.test_function2,
             'add_functions does its job twice'
           );
           Y.Assert.isNotUndefined(
             this.worker.functions.test_function2,
             'add_functions registers twice'
           );
-          Y.Assert.areSame(
-            functions.test_function2[1],
-            'data3',
-            'add_functions does its job three times'
-          );
         },
         
         testCallFunctions: function () {
           str = "";
           var worker = this.worker;
+          function real_function() {
+            str = "For real!";
+          }
           worker.add_functions(
             {
               a: "function (s) {str += 'a1' + ' ' + s + ' '}",
@@ -117,15 +115,29 @@
             },
             {
               a: "function (s) {str += 'a2' + ' ' + s + ' '}",
+            },
+            {
+              real_function: real_function,
             }
           );
-          this.worker.call_functions({a: 'c'}, {b: 'e'});
-          Y.Assert.areSame('a1 c a2 c b e ', str, 'functions are called');
+          worker.call_functions({a: 'c'}, {b: 'e'});
+          Y.Assert.areSame(
+            'a2 c b e ',
+             str,
+            'functions are called'
+          );
           worker.functions.a('f');
           Y.Assert.areSame(
-            'a1 c a2 c b e a1 f a2 f ', 
+            'a2 c b e a2 f ', 
             str, 
             'functions can be called through worker.functions'
+          );
+          worker.call_functions('real_function');
+          Y.Assert.areSame(
+            'For real!',
+            str,
+            'function objects (rather than just strings) can be passed to \n'+
+            'add_function and call_function can be called with just a string'
           );
         },
         
@@ -197,6 +209,62 @@
              handler.test_handler2(),
              'add_handler adds second of multiple handlers correctly'
            );
+        },
+        
+        testAddCallbackFunctions: function () {
+          var worker = this.worker;
+          // Notice that this str is only visible
+          // in local scope.
+          str = "";
+          (function () {
+            var str = "";
+            var test_callback1 = function (s) {
+              str += s;
+            };
+            var test_callback2 = function () {
+              str += " test_callback2";
+            }
+            var test_callback3 = function (a, b, c) {
+              str = a + b + c;
+            }
+            worker.add_callback_functions({
+              test_callback1: test_callback1,
+              test_callback2: test_callback2,
+            }, {
+              test_callback3: test_callback3,
+            });
+            Y.Assert.isNotUndefined(
+              functions.test_callback1,
+              'first callback added to worker'
+            );
+            Y.Assert.isNotUndefined(
+              worker._responders.test_callback2,
+              'second callback added to worker._responders'
+            );
+            worker.functions.test_callback1('foo');
+            Y.Assert.areSame(
+              'foo',
+              str,
+              'callback was called with one argument'
+            );
+            worker.functions.test_callback2();
+            Y.Assert.areSame(
+              'foo test_callback2',
+              str,
+              'callback was called with no arguments'
+            );
+            worker.functions.test_callback3("Hello, ", "world", "!");
+            Y.Assert.areSame(
+              "Hello, world!",
+              str,
+              'callback was called with three arguments'
+            );
+          })();
+          Y.Assert.areSame(
+            "",
+            str,
+            'global str wasn\'t touched'
+          );
         },
       }));
     
