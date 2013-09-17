@@ -1,0 +1,9 @@
+/* Hide the resize handles when the console is collapsed */
+.yui3-console-collapsed .yui3-resize-handles-wrapper {
+  display: none;
+}
+
+/* Fix a console css bug. */
+.yui3-skin-sam .yui3-console-collapsed .yui3-console-content .yui3-console-hd {
+  border-radius: 10px;
+}
