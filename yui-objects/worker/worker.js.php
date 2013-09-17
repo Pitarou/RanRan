@@ -1,10 +1,10 @@
-// Sorry about this ...
 <?php
+  // Sorry about this ...
   require("../../config.php");
   js_header();
+  // I need it because the web worker needs to know the YUI path.
+  // I'll try to fix it later ...
 ?>
-// I need it because the web worker needs to know the YUI path.
-// I'll fix it later ...
 
 /////////////////////////////////////
 //
@@ -29,7 +29,7 @@
     return Array.prototype.slice.call(arg_list);
   }
   
-  var callbacks = {};
+  var functions = {};
 
   var handler = {
     add_handlers: function () {
@@ -49,21 +49,21 @@
       process_messages(self, handler, definitions);
     },
 
-    add_callbacks: function () {
+    add_functions: function () {
      var definitions = arguments_to_array(arguments);
      var handler = function (name, definition) {
-       var new_callback = eval('('+definition+')');
+       var new_function = eval('('+definition+')');
         if (!this.hasOwnProperty(name)) {
          this[name] = [];
        }
-       this[name].push(new_callback);
+       this[name].push(new_function);
       };
-      process_messages(self.callbacks, handler, definitions);
+      process_messages(self.functions, handler, definitions);
     },
 
-    call_callbacks: function () {
+    call_functions: function () {
      var messages = arguments_to_array(arguments);
-     process_messages(self.callbacks, self.callbacks, messages);
+     process_messages(self.functions, self.functions, messages);
     },
   };
   
@@ -74,7 +74,7 @@
   
   var names_to_make_globally_visible = [
     'arguments_to_array',
-    'callbacks',
+    'functions',
     'handler',
     'onmessage',
   ];
@@ -128,10 +128,17 @@
           } else {
             this._create_worker();
           }
+          this.functions = [];
         },
 
         destructor: function () {
           this._worker.terminate();
+        },
+        
+        _register_handler: function(handler_name) {
+          this[handler_name] = function () {
+            this.post(name, arguments);
+          }
         },
         
         
@@ -151,17 +158,38 @@
           this._post_message(message);
         },
         
-        add_callbacks: function () {
-          this.post('add_callbacks', arguments);
+        add_functions: function () {
+          this.post('add_functions', arguments);
+          var functions = this.functions;
+          function register(name) {
+            if (!functions.hasOwnProperty(name)) {
+              var me = this;
+              functions[name] = function () {
+                var message = {};
+                var args = arguments_to_array(arguments);
+                message[name] = args;
+                me.call_functions.call(me, message);
+              };
+            }
+          }
+          var args = arguments_to_array(arguments);
+          process_messages(this, register, args);
         },
-        call_callbacks: function () {
-          this.post('call_callbacks', arguments);
+        call_functions: function () {
+          this.post('call_functions', arguments);
         },
         eval_and_assign_globals: function () {
           this.post('eval_and_assign_globals', arguments);
         },
         add_handlers: function() {
           this.post('add_handlers', arguments);
+          function register(name) {
+            this[name] = function () {
+              this.post(name, arguments);
+            };
+          }
+          var args = arguments_to_array(arguments);
+          process_messages(this, register, args);
         },
         
         _create_worker: function () {

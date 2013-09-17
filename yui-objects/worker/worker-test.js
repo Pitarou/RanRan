@@ -20,13 +20,13 @@
         
         testCreate: function () {
           Y.Assert.isObject(this.worker, 'worker created');
-          Y.Assert.isObject(callbacks, 'callbacks created');
+          Y.Assert.isObject(functions, 'functions created');
           Y.Assert.isFunction(onmessage, 'simulated onmessage callback created');
           Y.Assert.isFunction(process_messages, 'process_messages created');
           Y.Assert.isFunction(postMessage, 'simulated postMessage created');
           Y.Assert.isFunction(handler.eval_and_assign_globals, 'eval_and_assign_globals created');
-          Y.Assert.isFunction(handler.add_callbacks, 'add_callbacks created');
-          Y.Assert.isFunction(handler.call_callbacks, 'call_callbacks created');
+          Y.Assert.isFunction(handler.add_functions, 'add_functions created');
+          Y.Assert.isFunction(handler.call_functions, 'call_functions created');
         },
         
         testArgumentsToArray: function () {
@@ -71,36 +71,46 @@
           );
         },
         
-        testAddCallbacks: function () {
-          this.worker.add_callbacks(
+        testAddFunctions: function () {
+          var worker = this.worker;
+          worker.add_functions(
             {
-              test_callback1: '"data1"',
-              test_callback2: '"data2"',
+              test_function1: '"data1"',
+              test_function2: '"data2"',
             },
             {
-              test_callback2: '"data3"',
+              test_function2: '"data3"',
             }
           );
           Y.Assert.areSame(
-            callbacks.test_callback1[0],
+            functions.test_function1[0],
             'data1',
-            'add_callbacks does its job once'
+            'add_functions does its job once'
+          );
+          Y.Assert.isNotUndefined(
+            this.worker.functions.test_function1,
+            'add_functions registers once'
           );
           Y.Assert.areSame(
-            callbacks.test_callback2[0],
+            functions.test_function2[0],
             'data2',
-            'add_callbacks does its job twice'
+            'add_functions does its job twice'
+          );
+          Y.Assert.isNotUndefined(
+            this.worker.functions.test_function2,
+            'add_functions registers twice'
           );
           Y.Assert.areSame(
-            callbacks.test_callback2[1],
+            functions.test_function2[1],
             'data3',
-            'add_callbacks does its job three times'
+            'add_functions does its job three times'
           );
         },
         
-        testCallCallbacks: function () {
+        testCallFunctions: function () {
           str = "";
-          this.worker.add_callbacks(
+          var worker = this.worker;
+          worker.add_functions(
             {
               a: "function (s) {str += 'a1' + ' ' + s + ' '}",
               b: "function (s) {str += 'b' + ' ' + s + ' '}",
@@ -109,15 +119,21 @@
               a: "function (s) {str += 'a2' + ' ' + s + ' '}",
             }
           );
-          this.worker.call_callbacks({a: 'c'}, {b: 'e'});
-          Y.Assert.areSame('a1 c a2 c b e ', str, 'callbacks are called');
+          this.worker.call_functions({a: 'c'}, {b: 'e'});
+          Y.Assert.areSame('a1 c a2 c b e ', str, 'functions are called');
+          worker.functions.a('f');
+          Y.Assert.areSame(
+            'a1 c a2 c b e a1 f a2 f ', 
+            str, 
+            'functions can be called through worker.functions'
+          );
         },
         
         testPostBadMessage: function () {
           this.worker.post_message({bad_message: null});
         },
         
-        testPostEmtpyMessages: function () {
+        testPostEmptyMessages: function () {
           this.worker.post_message({});
           this.worker.post_message([]);
           this.worker.post_message([{}]);
@@ -131,15 +147,63 @@
         
         testPostAddCallBacksMessage: function () {
           str = "";
-          this.worker.post_message({add_callbacks: {d: "function (s)  {str += s;}"}});
-          Y.Assert.isTrue(callbacks.hasOwnProperty('d'), 'add_callbacks message succeeded');
+          this.worker.post_message({add_functions: {d: "function (s)  {str += s;}"}});
+          Y.Assert.isTrue(functions.hasOwnProperty('d'), 'add_functions message succeeded');
         },
         
-        testPostCallCallbacksMessage: function () {
+        testPostCallFunctionsMessage: function () {
           str = "";
-          this.worker.post_message({add_callbacks: {e: "function (s) {str += 'e'+s;}"}})
-          this.worker.post_message({call_callbacks: {e: "f"}});
-          Y.Assert.areSame('ef', str, 'call_callbacks message succeeded');
+          this.worker.post_message({add_functions: {e: "function (s) {str += 'e'+s;}"}})
+          this.worker.post_message({call_functions: {e: "f"}});
+          Y.Assert.areSame('ef', str, 'call_functions message succeeded');
+        },
+        
+        testAddHandlers: function () {
+          var worker = this.worker;
+          str = "";
+          var t_h = function () {
+            var args = arguments_to_array(arguments);
+            for (var i = 0; i < args.length; ++i) {
+              arg = args[i];
+              str += args;
+            }
+          };
+          worker.add_handlers({
+            test_handler: t_h.toString()
+          });
+          Y.Assert.isNotUndefined(
+            handler.test_handler,
+            'add_handler has added a handler'
+          );
+           Y.Assert.isNotUndefined(
+             worker.test_handler, 
+             'add_handler has added a method to worker'
+           );
+           handler.test_handler('Hello');
+           Y.Assert.areSame(
+             'Hello',
+             str,
+             'add_handler creates functional handler'
+           );
+           worker.test_handler(', world!');
+           Y.Assert.areSame(
+             'Hello, world!',
+             str,
+             'add_handler adds functional method to worker'
+           );
+           worker.add_handlers({
+             test_handler1: 'function () {return "one"}',
+             test_handler2: 'function () {return "two"}'
+           });
+           Y.Assert.isNotUndefined(
+             worker.test_handler1,
+             'add_handler adds first of multiple methods to worker'
+           );
+           Y.Assert.areSame(
+             'two',
+             handler.test_handler2(),
+             'add_handler adds second of multiple handlers correctly'
+           );
         },
       }));
     
