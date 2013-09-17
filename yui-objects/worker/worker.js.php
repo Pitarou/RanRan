@@ -137,24 +137,20 @@
         
         _register_handler: function(handler_name) {
           this[handler_name] = function () {
-            this.post(name, arguments);
+            this._post_message(name, arguments);
           }
         },
         
-        _post_message: function (message) {
-          this._worker.postMessage(message);
-        },
-
         // temporary solution
-        post: function(name, caller_arguments) {
+        _post_message: function(name, caller_arguments) {
           var args = arguments_to_array(caller_arguments);
           var message = {};
           message[name] = args;
-          this._post_message(message);
+          this._worker.postMessage(message);
         },
         
         add_functions: function () {
-          this.post('add_functions', arguments);
+          this._post_message('add_functions', arguments);
           var functions = this.functions;
           function register(name) {
             if (!functions.hasOwnProperty(name)) {
@@ -171,16 +167,16 @@
           process_messages(this, register, args);
         },
         call_functions: function () {
-          this.post('call_functions', arguments);
+          this._post_message('call_functions', arguments);
         },
         eval_and_assign_globals: function () {
-          this.post('eval_and_assign_globals', arguments);
+          this._post_message('eval_and_assign_globals', arguments);
         },
         add_handlers: function() {
-          this.post('add_handlers', arguments);
+          this._post_message('add_handlers', arguments);
           function register(name) {
             this[name] = function () {
-              this.post(name, arguments);
+              this._post_message(name, arguments);
             };
           }
           var args = arguments_to_array(arguments);

@@ -130,31 +130,24 @@
         },
         
         testPostBadMessage: function () {
-          this.worker._post_message({bad_message: null});
-        },
-        
-        testPostEmptyMessages: function () {
-          this.worker._post_message({});
-          this.worker._post_message([]);
-          this.worker._post_message([{}]);
-          Y.Assert.pass('posted three different flavors of empty message and nothing broke')
+          this.worker._post_message('bad_message', []);
         },
         
         testPostEvalAndAssignGlobalsMessage: function () {
-          this.worker._post_message({eval_and_assign_globals: {test_global_4: '"data4"'}});
+          this.worker.eval_and_assign_globals({test_global_4: '"data4"'});
           Y.Assert.areSame('data4', test_global_4, 'eval_and_assign_globals message succeeded');
         },
         
         testPostAddCallBacksMessage: function () {
           str = "";
-          this.worker._post_message({add_functions: {d: "function (s)  {str += s;}"}});
+          this.worker.add_functions({d: "function (s)  {str += s;}"});
           Y.Assert.isTrue(functions.hasOwnProperty('d'), 'add_functions message succeeded');
         },
         
         testPostCallFunctionsMessage: function () {
           str = "";
-          this.worker._post_message({add_functions: {e: "function (s) {str += 'e'+s;}"}})
-          this.worker._post_message({call_functions: {e: "f"}});
+          this.worker.add_functions({e: "function (s) {str += 'e'+s;}"})
+          this.worker.call_functions({e: "f"});
           Y.Assert.areSame('ef', str, 'call_functions message succeeded');
         },
         
