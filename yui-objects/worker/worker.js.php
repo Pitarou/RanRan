@@ -33,16 +33,16 @@
 
   var handler = {
     add_handlers: function () {
-      var definitions = arguments_to_array(arguments);
+      var definitions = arguments;
       function add_handler_handler(name, definition) {
         var code = 'handler["' + name + '"] = ' + definition;
         eval(code);
       }
-      process_messages(this, add_handler_handler, definitions);
+      process_messages(this, add_handler_handler, arguments);
     },
   
     eval_and_assign_globals: function () {
-      var definitions = arguments_to_array(arguments);
+      var definitions = arguments;
       var handler = function (name, definition) {
         eval(name + " = " + definition);
       };
@@ -50,7 +50,7 @@
     },
 
     add_functions: function () {
-     var definitions = arguments_to_array(arguments);
+     var definitions = arguments;
      var handler = function (name, definition) {
        var new_function = eval('('+definition+')');
        this[name] = new_function;
@@ -59,7 +59,7 @@
     },
 
     call_functions: function () {
-     var messages = arguments_to_array(arguments);
+     var messages = arguments;
      process_messages(self.functions, self.functions, messages);
     },
   };
@@ -71,6 +71,9 @@
   
   function callback(name, args) {
     var message_obj = {};
+    if (args.toString() === "[object Arguments]") {
+      args = arguments_to_array(args);
+    }
     message_obj[name] = args;
     postMessage({respond: message_obj});
   };
@@ -162,8 +165,7 @@
               };
             }
           }
-          var args = arguments_to_array(arguments);
-          process_messages(this, register, args);
+          process_messages(this, register, arguments);
         },
         call_functions: function () {
           this._post_message('call_functions', arguments);
@@ -178,25 +180,20 @@
               this._post_message(name, arguments);
             };
           }
-          var args = arguments_to_array(arguments);
-          process_messages(this, register, args);
+          process_messages(this, register, arguments);
         },
         
         add_callback_functions: function() {
-          var args = arguments_to_array(arguments);
           function register(name, responder) {
             this._responders[name] = responder;
             var callback_definition =
-              'function () {\n' +
-              '  var args = arguments_to_array(arguments);\n' +
-              '  callback("' + name + '", args);\n' +
-              '}'
+              'function () {callback("' + name + '", arguments);}'
             ;
             var callbacks = {};
             callbacks[name] = callback_definition;
             this.add_functions(callbacks);
           }
-          process_messages(this, register, args);
+          process_messages(this, register, arguments);
         },
         
         _create_worker: function () {
@@ -206,8 +203,7 @@
         
         _handler: {
           respond: function () {
-            var args = arguments_to_array(arguments);
-            process_messages(this, this._responders, args);
+            process_messages(this, this._responders, arguments);
           },
         },
         

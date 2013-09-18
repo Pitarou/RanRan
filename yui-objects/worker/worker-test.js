@@ -23,6 +23,7 @@
           Y.Assert.isObject(functions, 'functions created');
           Y.Assert.isFunction(onmessage, 'simulated onmessage callback created');
           Y.Assert.isFunction(process_messages, 'process_messages created');
+          Y.Assert.isFunction(arguments_to_array, 'arguments_to_array created');
           Y.Assert.isFunction(postMessage, 'simulated postMessage created');
           Y.Assert.isFunction(handler.eval_and_assign_globals, 'eval_and_assign_globals created');
           Y.Assert.isFunction(handler.add_functions, 'add_functions created');

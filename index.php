@@ -11,6 +11,8 @@ require_once('config.php');
     <h1>Integrating Ace Editor into YUI3</h1>
     <h2>Next steps</h2>
 	<ul>
+	  <li>Fix what happens when a windows is created in a collapsed state.</li>
+	  <li>Fix the drag handles being the wrong size on creation.</li>
 	  <li>Raise an appropriate signal so that when the <tt>EditorPanel</tt> and 
 	      <tt>Console</tt> are expanded the position constraints are triggered.
 		  (I've got a hack for the <tt>EditorPanel</tt>, but it's not exactly satisfactory,

@@ -11,7 +11,8 @@
 // Argument: handlers
 // ==================
 //
-// Can be a function, an object, or an array of functions and objects.
+// Can be a function, an object, an array of functions and objects,
+// or an Arguments object of functions and objects.
 //
 //
 // Function handlers
@@ -67,11 +68,18 @@
 //
 //        callback([data_list_1, data_list_2]);
 //
+// List of handlers or Arguments object of handlers
+// ------------------------------------------------
+//
+// A list of handlers or an Arguments objects of handlers will be
+// called in sequence.  For each handler, iterate through all
+// the messages.
 //
 // Argument: messages
 // ==================
 //
-// Can be a string, an object, or an array of strings and objects.
+// Can be a string, an object, or an array of strings and objects
+// or an Arguments object of strings and objects.
 //
 //
 // Object messages
@@ -90,11 +98,12 @@
 // A string is treated as a message without any attached data.
 //
 //
-// Lists of messages
-// -----------------
+// List of messages or Arguments object of messages
+// ------------------------------------------------
 //
-// An array is treated as a list of messages.  The messages
-// will be handled in order.  So, for example, if the message is:
+// An array or Arguments objec is treated as a list of messages.
+// The messages will be handled in order.
+// So, for example, if the message is:
 //
 //     ["message_id_1",
 //      {message_id_2a: message_data_2a,
@@ -399,6 +408,18 @@
 // Notice that the "print_with_prefix" method is ignored.
 
 YUI.add('message-processor', function (Y) {
+  function normalize_to_list(argument) {
+    if (argument instanceof Array) {
+      return argument;
+    }
+    if (typeof argument === "object" && 
+        argument.toString() === "[object Arguments]"
+    ) {
+      return Array.prototype.slice.call(argument);
+    }
+    return [argument];
+  }
+
   Y.namespace("RanRan");
   Y.RanRan.process_messages = function(context, handlers, messages, ignore_missing_handlers) {
     // Check for the commonest calling errors
@@ -412,7 +433,7 @@ YUI.add('message-processor', function (Y) {
     }
 
     // normalise a handler object or function to a list of callbacks
-    var handler_list = [].concat(handlers);
+    var handler_list = normalize_to_list(handlers);
     var callbacks = [];
 
     // accumulate a set of all handler_names, so that we can quickly check for
@@ -423,33 +444,33 @@ YUI.add('message-processor', function (Y) {
       var handler = handler_list[handler_index];
       // normalise the handler object or function to a callback
       var callback;
-      if (typeof(handler) === "function") {
-        // there is no risk of unhandled callbacks
-        check_handler_names = false;
-        // we already have the function we need, so we just
-        // need to make sure it's applied in the correct context
-        // and handles plain strings appropriately
-        callback = function (message_name, message_data) {
-          if (arguments.length === 1) {
-            handler.call(context, message_name);
-          } else {
-            handler.call(context, message_name, message_data);
+      // put the handler in a closure, so the generated
+      // callbacks each point to a different version of handler
+      (function (handler) {
+        if (typeof(handler) === "function") {
+          // there is no risk of unhandled callbacks
+          check_handler_names = false;
+          // we already have the function we need, so we just
+          // need to make sure it's applied in the correct context
+          // and handles plain strings appropriately
+          callback = function (message_name, message_data) {
+            if (arguments.length === 1) {
+              handler.call(context, message_name);
+            } else {
+              handler.call(context, message_name, message_data);
+            }
+          };
+        } else {
+          // if we are checking for missing handlers
+          // we need to add this handler's message_names
+          // to the set
+          if (check_handler_names) {
+            for (var handler_name in handler) {
+              check_handler_names[handler_name] = true;
+            }
           }
-        };
-      } else {
-        // if we are checking for missing handlers
-        // we need to add this handler's message_names
-        // to the set
-        if (check_handler_names) {
-          for (var handler_name in handler) {
-            check_handler_names[handler_name] = true;
-          }
-        }
-        // the callback is a function that looks up the correct function(s)
-        // in the handler object
-        //
-        // generate a closure for the handler
-        (function (handler) {
+          // the callback is a function that looks up the correct function(s)
+          // in the handler object
           callback = function(message_name, message_data) {
             var handler_data = handler[message_name];
             if (typeof(handler_data) !== "undefined") {
@@ -465,13 +486,13 @@ YUI.add('message-processor', function (Y) {
               }
             }
           }
-        })(handler);
-      }
+        }
+      })(handler);
       callbacks.push(callback);
     }
-  
+        
     // normalise the messages to a list
-    var message_list = [].concat(messages);
+    var message_list = normalize_to_list(messages);
   
     // check for any missing handlers
     if (check_handler_names) {

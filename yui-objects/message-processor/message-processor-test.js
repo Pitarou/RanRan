@@ -27,7 +27,7 @@ YUI.add('message-processor-test', function (Y) {
       if (expect.constructor !== actual.constructor) {
         return 'expected and actual have different constructors';
       }
-      if (expect.constructor === Array) {
+      if (expect instanceof Array) {
         if (expect.length !== actual.length) {
           return 'array is of different length'
         }
@@ -641,6 +641,41 @@ YUI.add('message-processor-test', function (Y) {
         ['ab', 'cd'],
         {append: 'abcdABCD'}
       )},
+    }));
+    
+    process_messages_suite.add(new Y.Test.Case({
+      name: 'Arguments object messages and handlers',
+      testArgumentMessage: function () {
+        var str = "";
+        function cb1(s) {
+          str += s;
+        }
+        function cb2(s) {
+          str += s.toUpperCase();
+        }
+        var arg1 = 'Hello, '
+        var arg2 = 'world! '
+        var expected = 'Hello, world! HELLO, WORLD! ';
+        Y.RanRan.process_messages(this, [cb1, cb2], [arg1, arg2]);
+        Y.Assert.areSame(
+          expected,
+          str,
+          'metatest for processing the functions defined in testArgumentMessage'
+        );
+        str = "";
+        (function () {
+          var messages = arguments;
+          (function () {
+            handlers = arguments;
+            Y.RanRan.process_messages(this, handlers, messages);
+          })(cb1, cb2);
+        })(arg1, arg2);
+        Y.Assert.areSame(
+          expected,
+          str,
+          'successfully processed sequences of messages and handlers supplied as Arguments objects'
+        );
+      },
     }));
     
     Y.Test.Runner.add(process_messages_suite);
