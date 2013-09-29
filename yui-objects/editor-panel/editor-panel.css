@@ -37,7 +37,7 @@
 /* The .yui3-editorpanel-collapsed class:
  *  - makes the body and footer disappear
  *  - makes the resize handles disapper
- *  - adds rounded corners to the body (for a consistent appearance)
+ *  - adds rounded corners to the head (for a consistent appearance)
  */
 .yui3-editorpanel-collapsed .yui3-resize-handles-wrapper {
   display: none;

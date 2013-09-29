@@ -7,11 +7,10 @@ YUI.add("yui-ace-editor", function(Y) {
 	  AceEditor.INPUT_CLASS = Y.ClassNameManager.getClassName(AceEditor.NAME, "value");
 	  AceEditor.EDITOR_NODE_TEMPLATE = "<div>{value}</div>";
 	  AceEditor.DEFAULT_READ_ONLY_THEME = "dawn";
-	  AceEditor.DEFAULT_EDITABLE_THEME = "monokai";
+	  AceEditor.DEFAULT_EDITABLE_THEME = "chrome";
 
-    /*
-     * The attribute configuration for the widget. This defines the core user facing state of the widget
-     */
+    // The attribute configuration for the widget.
+    // This defines the core user facing state of the widget
     AceEditor.ATTRS = {
       initialValue : {value: "default content",},
       theme: {value: null,},
@@ -21,6 +20,13 @@ YUI.add("yui-ace-editor", function(Y) {
     };
     
     
+    // Functions to parse data-ace-name="..." attributes from the
+    // src node.
+    var get_text_value = function (srcNode, value_name) {
+      var value = srcNode.one('.'+AceEditor.INPUT_CLASS).getAttribute('data-ace-' +value_name);
+      return value ? value : null;
+    };
+
     // Returns false for null, undefined, "false", "0", "00.00", and so on.
     // Returns true for anything else.
     var get_boolean_value = function (srcNode, value_name) {
@@ -28,11 +34,6 @@ YUI.add("yui-ace-editor", function(Y) {
       if (!value) return null;
       return value ? value.toLowerCase() !== "false" && parseFloat(value) !== 0
                    : null
-    };
-    
-    var get_text_value = function (srcNode, value_name) {
-      var value = srcNode.one('.'+AceEditor.INPUT_CLASS).getAttribute('data-ace-' +value_name);
-      return value ? value : null;
     };
     
     var get_numeric_value = function (srcNode, value_name) {
@@ -58,47 +59,14 @@ YUI.add("yui-ace-editor", function(Y) {
         },
     };
 
-    /* MyWidget extends the base Widget class */
     Y.extend(AceEditor, Y.Widget, {
       initializer: function() {
-            /*
-             * initializer is part of the lifecycle introduced by
-             * the Base class. It is invoked during construction,
-             * and can be used to setup instance specific state or publish events which
-             * require special configuration (if they don't need custom configuration,
-             * events are published lazily only if there are subscribers).
-             *
-             * It does not need to invoke the superclass initializer.
-             * init() will call initializer() for all classes in the hierarchy.
-             */
       },
 
       destructor : function() {
-            /*
-             * destructor is part of the lifecycle introduced by
-             * the Widget class. It is invoked during destruction,
-             * and can be used to cleanup instance specific state.
-             *
-             * Anything under the boundingBox will be cleaned up by the Widget base class
-             * We only need to clean up nodes/events attached outside of the bounding Box
-             *
-             * It does not need to invoke the superclass destructor.
-             * destroy() will call initializer() for all classes in the hierarchy.
-             */
       },
 
       renderUI : function() {
-            /*
-             * renderUI is part of the lifecycle introduced by the
-             * Widget class. Widget's renderer method invokes:
-             *
-             *     renderUI()
-             *     bindUI()
-             *     syncUI()
-             *
-             * renderUI is intended to be used by the Widget subclass
-             * to create or insert new elements into the DOM.
-             */
 			   var contentBox = this.get("contentBox");
 			   this._aceNode = contentBox.one('.'+AceEditor.INPUT_CLASS);
 			   if (!this._aceNode) {
@@ -169,9 +137,9 @@ YUI.add("yui-ace-editor", function(Y) {
         }
       },
 	  
-	  _onEditorChange: function () {
-		this.fire('edited');
-	  },
+      _onEditorChange: function () {
+        this.fire('edited');
+      },
 		  getValue : function() {
         return this._editor.getValue();
 	    },
