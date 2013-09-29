@@ -40,11 +40,11 @@
 //         message_id_b: [callback_b1, callback_b2],
 //     }
 //
-// For each message, the callback or list of callbacks
+// For each message, the callback or Array of callbacks
 // with matching message id is looked up.
 //
-// If the lookup returns a callback, that callback.
-// If the lookup returns a list of callbacks,
+// If the lookup returns a callback, that callback is called.
+// If the lookup returns an array of callbacks,
 // each callback is called in sequence.
 //
 // The way the callback is called depends on the message:
@@ -53,7 +53,7 @@
 //
 //        callback();
 //
-//  * object {message_id: message_data} (where data is NOT a list):
+//  * object {message_id: message_data} (where data is **not** an array):
 //
 //        callback(message_data);
 //
@@ -61,17 +61,17 @@
 //
 //        callback(message_datum_1, message_datum_2);
 //
-// Thus, if you want to pass a list as a single argument to the callback,
-// you have to wrap it in another list:
+// Thus, if you want to pass an Array as a single argument to the callback,
+// you have to wrap it in another Array:
 //
 //  * object {message_id: [[data_list_1, data_list_2]]}
 //
 //        callback([data_list_1, data_list_2]);
 //
-// List of handlers or Arguments object of handlers
-// ------------------------------------------------
+// Arrays of handlers or Arguments objects of handlers
+// --------------------------------------------------
 //
-// A list of handlers or an Arguments objects of handlers will be
+// An Array of handlers or an Arguments objects of handlers will be
 // called in sequence.  For each handler, iterate through all
 // the messages.
 //
@@ -101,8 +101,8 @@
 // List of messages or Arguments object of messages
 // ------------------------------------------------
 //
-// An array or Arguments objec is treated as a list of messages.
-// The messages will be handled in order.
+// An Array or Arguments objects is treated as a sequence of messages
+// to be handled in order.
 // So, for example, if the message is:
 //
 //     ["message_id_1",
@@ -123,9 +123,8 @@
 // ==========================================
 //
 // By default, process_messages assumes that
-// you want every message to be handled
-// at least once.  If a message is not handled,
-// it will raise an exception.
+// you want every message to be handled at least once.
+// If a message is not handled, it will raise an exception.
 //
 // If that is not the behaviour you want,
 // set this flag to true.
@@ -134,14 +133,14 @@
 // Sequencing
 // ==========
 //
-// process_messages iterates though the list of handlers
+// process_messages iterates though the sequence of handlers
 //
-// For each handler, it iterates through the list of messages and,
+// For each handler, it iterates through the sequence of messages and,
 // when appropriate, calls processes the message with the handler.
 //
-// If the handler is a list of callbacks then, for each time
+// If the handler is an Array of callbacks then, for each time
 // it processes a message with this handler, it iterates through
-// the list of callbacks and calls each callback with the message.
+// the Array of callbacks and calls each callback with the message.
 //
 //
 // Using class instances as handlers
@@ -155,10 +154,8 @@
 // Using class instances as messages
 // =================================
 //
-// Only the properties directly define on that object
-// will be used.  In other words, the object's prototype
-// is ignored.
-//
+// Only the properties directly define on that object will be used.
+// In other words, the object's prototype is ignored.
 // (This ensures that monkey-patching Object will
 // not screw up your message handler.)
 //
@@ -219,12 +216,12 @@
 //
 // (the order is not defined for objects)
 //
-// Note that the list [2, 3] is passed to the function unchanged.
+// Note that the Array [2, 3] is passed to the function unchanged.
 // This is not the case for object handlers.
 //
 //
-// Handler function, list of messages
-// ----------------------------------
+// Handler function, Array of messages
+// -----------------------------------
 //
 //     process_messages(this, print, ['a', {b:1, c:2}, 'd']);
 //
@@ -267,8 +264,8 @@
 //     type();
 //     type(5);
 //
-// Note that the elements of the list [3, 4] are passed to
-// the callback as separate arguments.
+// Note that the elements of the Array [3, 4]
+// are passed to the callback as separate arguments.
 // This is not the case for function handlers.
 //
 // Also note that:
@@ -280,13 +277,13 @@
 //     {t: []}
 //
 // results in a function call with no arguments;
-// and that it is still possible to pass a list as
+// and that it is still possible to pass an Array as
 // an argument like this:
 //
 //     {t: [[5]]}
 //
 //
-// Handler object (list of callbacks), string message
+// Handler object (Array of callbacks), string message
 // --------------------------------------------------
 //
 //     process_messages(this, {a: [print, type]}, {a: 1});
@@ -297,8 +294,8 @@
 //     type(1);
 //
 //
-// Lists of handlers, list of messages, sequencing
-// -----------------------------------------------
+// Array of handlers, Array of messages, sequencing
+// ------------------------------------------------
 //
 //     var accumulator = "";
 //
@@ -314,8 +311,31 @@
 // Note that 'append' handled every message before APPEND did.
 //
 //
-// List of handler objects (list of callbacks), list of messages, sequencing
-// -------------------------------------------------------------------------
+// Arguments objects
+// -----------------
+//
+// Arguments objects are handled like Arrays.
+// This example is the same as the preceding example,
+// but uses Arguments objects instead of Arrays.
+//
+//     var accumulator = "";
+//
+//     var append = function (s) {accumulator += s.toLowerCase()};
+//     var APPEND = function (s) {accumulator += s.toUpperCase()};
+//
+//     (function (handlers) {
+//       (function (messages) {
+//         process_messages(this, messages, handlers)
+//       }) ([append, APPEND]);
+//     })("a", "a", "b")
+//
+// results in accumulator looking like this:
+//
+//     "aabAAB"
+//
+//
+// Array of handler objects (Arrays of callbacks), Array of messages, sequencing
+// -----------------------------------------------------------------------------
 //
 //     var accumulator = "";
 //
@@ -407,12 +427,14 @@
 //
 // Notice that the "print_with_prefix" method is ignored.
 
-YUI.add('message-processor', function (Y) {
+(function () {
   function normalize_to_list(argument) {
     if (argument instanceof Array) {
       return argument;
     }
     if (typeof argument === "object" && 
+        argument.constructor === Object &&
+        !argument.hasOwnProperty(toString) &&
         argument.toString() === "[object Arguments]"
     ) {
       return Array.prototype.slice.call(argument);
@@ -420,8 +442,7 @@ YUI.add('message-processor', function (Y) {
     return [argument];
   }
 
-  Y.namespace("RanRan");
-  Y.RanRan.process_messages = function(context, handlers, messages, ignore_missing_handlers) {
+  function process_messages(context, handlers, messages, ignore_missing_handlers) {
     // Check for the commonest calling errors
     if (arguments.length < 3) {
       throw TypeError('Y.RanRan.Worker: process_messages: need context, messages and handlers');
@@ -547,4 +568,16 @@ YUI.add('message-processor', function (Y) {
       }
     }
   }
-});
+
+  // If YUI is defined, add the function to YUI's RanRan namespace.
+  // If it isn't, assume we are in a WebWorker, and
+  // export it to the global namespace.
+  if (typeof(YUI) !== 'undefined') {
+    YUI.add('message-processor', function (Y) {
+      Y.namespace("RanRan");
+      Y.RanRan.process_messages = process_messages;
+    });
+  } else {
+    self.process_messages = process_messages;
+  }
+})();

@@ -10,6 +10,7 @@
         
         setUp: function () {
           this.worker = new Y.RanRan.Worker({simulated: true});
+          this.real_worker = new Y.RanRan.Worker();
         },
         
         _should: {
@@ -20,10 +21,11 @@
         
         testCreate: function () {
           Y.Assert.isObject(this.worker, 'worker created');
-          Y.Assert.isObject(functions, 'functions created');
+          Y.Assert.isObject(this.real_worker, 'real worker created');
+          Y.Assert.isObject(functions, 'simulated functions created');
           Y.Assert.isFunction(onmessage, 'simulated onmessage callback created');
           Y.Assert.isFunction(process_messages, 'process_messages created');
-          Y.Assert.isFunction(arguments_to_array, 'arguments_to_array created');
+          Y.Assert.isFunction(arguments_to_array, 'simulated arguments_to_array created');
           Y.Assert.isFunction(postMessage, 'simulated postMessage created');
           Y.Assert.isFunction(handler.eval_and_assign_globals, 'eval_and_assign_globals created');
           Y.Assert.isFunction(handler.add_functions, 'add_functions created');
@@ -71,6 +73,15 @@
             'eval_and_assign_globals does its job three times'
           );
         },
+
+        testRealEvalAndAssignGlobals: function () {
+          this.real_worker.eval_and_assign_globals(
+            {
+              test_global: '"data"',
+            }
+          );
+          Y.Assert.pass('real eavl_and_assign_globals didn\'t crash');
+        },
         
         testAddFunctions: function () {
           var worker = this.worker;
@@ -104,42 +115,44 @@
         },
         
         testCallFunctions: function () {
-          str = "";
+          // global
+          __str = "";
           var worker = this.worker;
           function real_function() {
-            str = "For real!";
+            __str = "For real!";
           }
           worker.add_functions(
             {
-              a: "function (s) {str += 'a1' + ' ' + s + ' '}",
-              b: "function (s) {str += 'b' + ' ' + s + ' '}",
+              a: "function (s) {__str += 'a1' + ' ' + s + ' '}",
+              b: "function (s) {__str += 'b' + ' ' + s + ' '}",
             },
             {
-              a: "function (s) {str += 'a2' + ' ' + s + ' '}",
+              a: "function (s) {__str += 'a2' + ' ' + s + ' '}",
             },
             {
               real_function: real_function,
             }
           );
-          worker.call_functions({a: 'c'}, {b: 'e'});
+          worker._call_functions({a: 'c'}, {b: 'e'});
           Y.Assert.areSame(
             'a2 c b e ',
-             str,
+             __str,
             'functions are called'
           );
           worker.functions.a('f');
           Y.Assert.areSame(
             'a2 c b e a2 f ', 
-            str, 
+            __str, 
             'functions can be called through worker.functions'
           );
-          worker.call_functions('real_function');
+          worker._call_functions('real_function');
           Y.Assert.areSame(
             'For real!',
-            str,
+            __str,
             'function objects (rather than just strings) can be passed to \n'+
             'add_function and call_function can be called with just a string'
           );
+          delete __str
         },
         
         testPostBadMessage: function () {
@@ -151,31 +164,36 @@
           Y.Assert.areSame('data4', test_global_4, 'eval_and_assign_globals message succeeded');
         },
         
-        testPostAddCallBacksMessage: function () {
-          str = "";
-          this.worker.add_functions({d: "function (s)  {str += s;}"});
+        testPostAddFunctionsMessage: function () {
+          // global
+          __str = "";
+          this.worker.add_functions({d: "function (s)  {__str += s;}"});
           Y.Assert.isTrue(functions.hasOwnProperty('d'), 'add_functions message succeeded');
+          delete __str;
         },
         
         testPostCallFunctionsMessage: function () {
-          str = "";
-          this.worker.add_functions({e: "function (s) {str += 'e'+s;}"})
-          this.worker.call_functions({e: "f"});
-          Y.Assert.areSame('ef', str, 'call_functions message succeeded');
+          // global
+          __str = "";
+          this.worker.add_functions({e: "function (s) {__str += 'e'+s;}"})
+          this.worker._call_functions({e: "f"});
+          Y.Assert.areSame('ef', __str, 'call_functions message succeeded');
+          delete __str;
         },
         
         testAddHandlers: function () {
           var worker = this.worker;
-          str = "";
+          // global variable
+          __str = "";
           var t_h = function () {
             var args = arguments_to_array(arguments);
             for (var i = 0; i < args.length; ++i) {
               arg = args[i];
-              str += args;
+              __str += args;
             }
           };
           worker.add_handlers({
-            test_handler: t_h.toString()
+            test_handler: t_h
           });
           Y.Assert.isNotUndefined(
             handler.test_handler,
@@ -188,13 +206,13 @@
            handler.test_handler('Hello');
            Y.Assert.areSame(
              'Hello',
-             str,
+             __str,
              'add_handler creates functional handler'
            );
            worker.test_handler(', world!');
            Y.Assert.areSame(
              'Hello, world!',
-             str,
+             __str,
              'add_handler adds functional method to worker'
            );
            worker.add_handlers({
@@ -210,55 +228,56 @@
              handler.test_handler2(),
              'add_handler adds second of multiple handlers correctly'
            );
+           delete __str;
         },
         
-        testAddCallbackFunctions: function () {
+        testAddCalloutFunctions: function () {
           var worker = this.worker;
           // Notice that this str is only visible
           // in local scope.
-          str = "";
+          var str = "";
           (function () {
             var str = "";
-            var test_callback1 = function (s) {
+            var test_callout1 = function (s) {
               str += s;
             };
-            var test_callback2 = function () {
-              str += " test_callback2";
+            var test_callout2 = function () {
+              str += " test_callout2";
             }
-            var test_callback3 = function (a, b, c) {
+            var test_callout3 = function (a, b, c) {
               str = a + b + c;
             }
-            worker.add_callback_functions({
-              test_callback1: test_callback1,
-              test_callback2: test_callback2,
+            worker.add_callout_functions({
+              test_callout1: test_callout1,
+              test_callout2: test_callout2,
             }, {
-              test_callback3: test_callback3,
+              test_callout3: test_callout3,
             });
             Y.Assert.isNotUndefined(
-              functions.test_callback1,
-              'first callback added to worker'
+              functions.test_callout1,
+              'first callout added to worker'
             );
             Y.Assert.isNotUndefined(
-              worker._responders.test_callback2,
-              'second callback added to worker._responders'
+              worker._responders.test_callout2,
+              'second callout added to worker._responders'
             );
-            worker.functions.test_callback1('foo');
+            worker.functions.test_callout1('foo');
             Y.Assert.areSame(
               'foo',
               str,
-              'callback was called with one argument'
+              'callout was called with one argument'
             );
-            worker.functions.test_callback2();
+            worker.functions.test_callout2();
             Y.Assert.areSame(
-              'foo test_callback2',
+              'foo test_callout2',
               str,
-              'callback was called with no arguments'
+              'callout was called with no arguments'
             );
-            worker.functions.test_callback3("Hello, ", "world", "!");
+            worker.functions.test_callout3("Hello, ", "world", "!");
             Y.Assert.areSame(
               "Hello, world!",
               str,
-              'callback was called with three arguments'
+              'callout was called with three arguments'
             );
           })();
           Y.Assert.areSame(
@@ -267,6 +286,132 @@
             'global str wasn\'t touched'
           );
         },
+
+        testFunctionsCallCalloutsRoundTrip: function () {
+          var worker = this.worker;
+          var str = "";
+          var echo = function (arg) {str += arg;};
+          var shout = function (arg) {this.echo(arg);};
+          worker.add_callout_functions({echo: echo});
+          worker.add_functions({shout: shout});
+          worker.functions.shout(21);
+          Y.Assert.areSame('21', str, 'function callout roundtrip with simulate worker succeeded');
+        },
+        
+        testRealFunctionsCallCalloutsRoundTrip: function() {
+          var worker = this.real_worker;
+          var str = "";
+          var shout = function (arg) {this.echo(arg);};
+          var test = this;
+          var echo = function (arg) {
+            str += arg;
+            test.resume(function () {
+              Y.Assert.areSame('21', str, 'function callout roundtrip with real worker succeeded');
+            });
+          };
+          worker.add_callout_functions({echo: echo});
+          worker.add_functions({shout: shout});
+          worker.functions.shout(21);
+          this.wait(200);
+        },
+        
+        testAddFunctionsAddsTimeoutModifyingFunction: function() {
+          var worker = this.worker;
+          worker.add_functions({foo: function () {}});
+          Y.Assert.isNotUndefined(
+            worker._timeout_modifying_functions.foo,
+            'function added to worker._timeout_modifying_functions'
+          );
+        },
+        
+        testFunctionGetTimeoutModifiers: function() {
+          var worker = this.worker;
+          var tm1 = worker.with_timeout_period(42);
+          worker.add_functions({inert: function () {}});
+          var tm2 = worker.with_timeout_period(54);
+          Y.Assert.isNotUndefined(tm1, 'first timeout modifier created');
+          Y.Assert.isNotUndefined(tm1.inert, 'function added after timeout modifier created is accessible through timeout modifier');
+          Y.Assert.isNotUndefined(tm2, 'second timeout modifier created');
+          Y.Assert.isNotUndefined(tm1.inert, 'function added before timeout modifier created is accessible through timeout modifier');
+          Y.Assert.areNotSame(tm1, tm2, 'timeout modifiers are distinct');
+          Y.Assert.areSame(42, tm1.timeoutPeriod, 'first timeout modifier has correct timeout');
+          Y.Assert.areSame(54, tm2.timeoutPeriod, 'second timeout modifier has correct timeout');
+        },
+        
+        testPeriodPassedToSetTimeout: function () {
+          var worker = this.worker;
+          var defaultTimeoutPeriod = worker.get('defaultTimeoutPeriod');
+          var modifiedTimeoutPeriod = 42;
+          var rememberedTimeoutPeriod = null;
+          var timeoutIDCounter = 14728; // random
+          var mockSetTimeout = function (ignored, timeoutPeriod) {
+            rememberedTimeoutPeriod = timeoutPeriod;
+            return ++timeoutIDCounter;
+          };
+          worker.set('mockSetTimeout', mockSetTimeout);
+          worker.add_functions({inert: function () {}});
+          worker.with_timeout_period(42).inert();
+          Y.Assert.areSame(42, rememberedTimeoutPeriod, 'with_timeout_period sets timeout appropriately');
+          worker.functions.inert();
+          Y.Assert.areSame(100, rememberedTimeoutPeriod, 'functions retains default timeout period');
+          worker.set('mockSetTimeout', false);
+        },
+
+        testCustomTimeoutHandlerCalledOnTimeout: function () {
+          var worker = this.real_worker;
+          var test = this;
+          var str = 'not modified';
+          worker.add_functions({times_out: function () {while(1);}});
+          worker.set('customTimeoutHandler', function () {
+            test.resume(function () {
+              // It is the timeout handler's responsibility
+              // to terminate the worker.
+              worker.destructor();
+              Y.Assert.pass('timeout handler called');
+            });
+          }); 
+          worker.functions.times_out();
+          test.wait(200);
+        },
+
+        testDefaultTimeoutHandlerCalledOnTimeout: function () {
+          var worker = this.real_worker;
+          var test = this;
+          worker.add_functions({times_out: function () {while(1);}});
+          worker.on('worker:timeout', function () {
+            test.resume(function () {
+              Y.Assert.pass('default timeout handler called on timeout');
+            });
+          });
+          worker.functions.times_out();
+          test.wait(200);
+        },
+
+        testRealWorkerRebootFunctionsAndCallbacks: function () {
+          var worker = this.real_worker;
+          var _w = worker._worker;
+          var test = this;
+          worker.add_functions({foo: function () {}});
+          worker.add_functions({foo: function () {this.foo_callout()}});
+          worker.add_functions({bar: function () {this.bar_callout()}});
+          worker.add_callout_functions({foo_callout: function () {
+            test.resume(function () {
+              Y.Assert.pass('set up worker for test');
+              worker.reboot();
+              Y.Assert.areNotSame(_w, worker._worker, 'new worker created after reboot');
+              worker.functions.bar() 
+              test.wait(200);
+            });
+          }});
+          worker.add_callout_functions({bar_callout: function () {
+            test.resume(function () {
+              Y.Assert.pass('called functions after reboot');
+            });
+          }});
+          worker.functions.foo();
+          test.wait(200);
+        },
+        
       }));
     
       Y.Test.Runner.add(worker_suite);

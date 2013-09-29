@@ -125,7 +125,7 @@ console.log(brainfuck('++++++++++[>+++++++>++++++++++>+++>+<<<<-]>++.>+.+++++++.
 	       render: true,
 	       collapsed: true,
 	     });
-	     worker = new Y.RanRan.Worker({simulated: true});
+	     worker = new Y.RanRan.Worker();
        Y.use('test-console', function (Y) {
          new Y.Test.Console().render();
          Y.Test.Runner.run();
