@@ -11,11 +11,6 @@ require_once('config.php');
     <h1>Integrating Ace Editor into YUI3</h1>
     <h2>Next steps</h2>
 	<ul>
-	  <li>Fix the drag handles being the wrong size on creation.</li>
-	  <li>Raise an appropriate signal so that when the <tt>EditorPanel</tt> and 
-	      <tt>Console</tt> are expanded the position constraints are triggered.
-		  (I've got a hack for the <tt>EditorPanel</tt>, but it's not exactly satisfactory,
-		  and I'm not sure the same solution will work for the console.)</li>
 	  <li>Integrate Web Workers</li>
 	  <li>Improve Flexbox compatibility for older browsers</li>
 	</ul>
@@ -100,24 +95,7 @@ console.log(brainfuck('++++++++++[>+++++++>++++++++++>+++>+<<<<-]>++.>+.+++++++.
     <script type="text/javascript">
     
      // For some weird reason, I have to stage the loading in this sequence or ace-editor breaks.	 
-     YUI().use('ranran-base', 'console').use('node', 'dd-plugin', 'yui-ace-editor').use('editor-panel', 'worker', 'worker-test', 'message-processor-test', function(Y) {
-       cons = new Y.Console({
-		     plugins: [Y.Plugin.Resize, Y.Plugin.Drag],
-		     render: '#console',
-	     });
-       cons.dd.addHandle('.yui3-console-hd');
-	     cons.dd.plug([Y.Plugin.DDConstrained], {constrain: true});
-       cons.resize.set('autoHide', true);
-	     cons.resize.set('defMinWidth', Y.RanRan.Config.DEFAULT_MIN_WIDTH);
-	     cons._collapseExpandWidth = function() {
-	       if (this.get('collapsed')) {
-		       this.set('expandedWidth', this.get('width'));
-		       this.set('width', this.resize.get('defMinWidth'));
-		     } else {
-		       this.set('width', this.get('expandedWidth'));
-		     }
-	     };
-	     cons.after('collapsedChange', Y.bind(cons._collapseExpandWidth, cons));
+     YUI().use('ranran-base', 'console').use('node', 'dd-plugin', 'yui-ace-editor').use('editor-panel', 'worker', 'worker-test', 'message-processor-test', 'collapsible-parent-panel', function(Y) {
 
 	     panel = new Y.RanRan.EditorPanel({
 	       srcNode: '#editor-panel',

@@ -1,52 +1,15 @@
-/* For some reason, the background is transparent without this.
- */
-.yui3-editorpanel .yui3-editorpanel-content .yui3-widget-bd {
-  background-color: white;
-}
-
-/* Pretty rounded corners and border. */
-.yui3-editorpanel .yui3-editorpanel-content .yui3-widget-hd {
-  border-top-left-radius: 10px;
-  border-top-right-radius: 10px;
-}
-.yui3-editorpanel .yui3-editorpanel-content .yui3-widget-ft {
-  border-bottom-left-radius: 10px;
-  border-bottom-right-radius: 10px;
-}
-.yui3-editorpanel {
-  border: 1px solid lightgrey;
-  border-radius: 10px;
-}
-
 /* Put the editable content in flexboxes,
  * so it automatically resizes to fill the
  * available space.
  */
-.yui3-editorpanel .yui3-editorpanel-content .yui3-widget-bd,
-.yui3-editorpanel .yui3-editorpanel-content .yui3-widget-bd .yui3-childeditor-editable,
-.yui3-editorpanel .yui3-editorpanel-content .yui3-widget-bd .yui3-childeditor-editable .yui3-childeditor-content {
+.yui3-editorpanel-content .yui3-widget-bd,
+.yui3-editorpanel-content .yui3-widget-bd .yui3-childeditor-editable,
+.yui3-editorpanel-content .yui3-widget-bd .yui3-childeditor-editable .yui3-childeditor-content {
   display: flex;
   flex-direction: column;
 }
-.yui3-editorpanel .yui3-editorpanel-content .yui3-widget-bd .yui3-childeditor-editable,
-.yui3-editorpanel .yui3-editorpanel-content .yui3-widget-bd .yui3-childeditor-editable .yui3-childeditor-content,
-.yui3-editorpanel .yui3-editorpanel-content .yui3-widget-bd .yui3-childeditor-editable .yui3-childeditor-content .ace_editor {
+.yui3-editorpanel-content .yui3-widget-bd .yui3-childeditor-editable,
+.yui3-editorpanel-content .yui3-widget-bd .yui3-childeditor-editable .yui3-childeditor-content,
+.yui3-editorpanel-content .yui3-widget-bd .yui3-childeditor-editable .yui3-childeditor-content .ace_editor {
   flex: 1 1 auto;
-}
-
-/* The .yui3-editorpanel-collapsed class:
- *  - makes the body and footer disappear
- *  - makes the resize handles disapper
- *  - adds rounded corners to the head (for a consistent appearance)
- */
-.yui3-editorpanel-collapsed .yui3-resize-handles-wrapper {
-  display: none;
-}
-.yui3-editorpanel-collapsed .yui3-editorpanel-content .yui3-widget-bd,
-.yui3-editorpanel-collapsed .yui3-editorpanel-content .yui3-widget-ft {
-  display: none;
-}
-.yui3-editorpanel-collapsed .yui3-editorpanel-content .yui3-widget-hd {
-  border-bottom-left-radius: 10px;
-  border-bottom-right-radius: 10px;
 }

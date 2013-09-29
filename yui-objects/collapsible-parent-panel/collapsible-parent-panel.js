@@ -1,6 +1,13 @@
 YUI.add('collapsible-parent-panel', function (Y) {
+
+  var COLLAPSIBLE_PARENT_PANEL = 'collapsibleparentpanel';
+  var COLLAPSED_CLASSNAME = Y.ClassNameManager.getClassName(COLLAPSIBLE_PARENT_PANEL, 'collapsed');
+
   Y.namespace('RanRan');
   Y.RanRan.CollapsibleParentPanel = Y.Base.create('collapsibleparentpanel', Y.Panel, [Y.WidgetParent], {
+    initializer: function () {
+      this._addChildren();
+    },
     render: function () {
       Y.Panel.prototype.render.call(this);
       // Borrow the css styling from the console buttons
@@ -24,11 +31,12 @@ YUI.add('collapsible-parent-panel', function (Y) {
     },
     syncUI: function () {
       if (this.get('collapsed')) {
-        this._afterCollapsedChanged();
+        this._afterCollapsedChange();
       };
     },
+    _addChildren: function () {},
     _resizeChildren: function () {},
-    _afterCollapsedChanged: function () {
+    _afterCollapsedChange: function () {
       var collapsed = this.get('collapsed');
       var boundingBox = this.get('boundingBox');
       if (collapsed) {
@@ -47,6 +55,10 @@ YUI.add('collapsible-parent-panel', function (Y) {
                    this.getStdModNode(Y.WidgetStdMod.FOOTER).get('offsetHeight');
       boundingBox.set('offsetHeight', height);
     },
+    _toggle_collapsed: function() {
+      this.set('collapsed', !this.get('collapsed'));
+    },
+    
   },
   {
     ATTRS: {
@@ -65,6 +77,15 @@ YUI.add('collapsible-parent-panel', function (Y) {
       collapsed: {
         value: false,
       },
+		  buttons: {valueFn: function () {return [
+		    {
+			    name: 'collapse',
+			    value: 'Collapse',
+			    section: Y.WidgetStdMod.HEADER,
+			    action: Y.bind(this._toggle_collapsed, this),
+			    classNames: [COLLAPSE_BUTTON_CLASSNAME],
+		    },
+      ]}},
     },
   });
 }, '0.1', {requires: [

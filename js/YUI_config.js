@@ -123,14 +123,17 @@ add_module_group('ranran-base');
 add_module_group('yui-ace-editor', ['widget', 'ace-editor-noconflict'])
 add_module_group('editor-panel', [
 	'yui-ace-editor',
-	'widget-parent', 
-	'widget-child',
-	'panel', 
-	'dd-plugin',
-	'dd-constrain',
-	'resize-plugin',
-  'console-css',	
-	'ranran-base',
+  'collapsible-parent-panel',
+]);
+add_module_group('collapsible-parent-panel', [
+  'panel',
+  'console-css',
+  'collapsible-parent-panel-css',
+  'widget-parent',
+  'dd-plugin',
+  'dd-constrain',
+  'resize-plugin',
+  'widget-child',
 ]);
 add_module_group('worker', ['message-processor', 'base'], false, true);
 add_module_group('message-processor', [], false, true);
