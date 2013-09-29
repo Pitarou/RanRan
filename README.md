@@ -12,9 +12,7 @@ by presenting the editor in a YUI Panel which can be dragged, resized, and so on
 This work will be presented as part of the final project for an MSc in
 e-Learning Technology.
 
-The current version also requires .php.  In particular, the file
-`yui-objects/worker/worker.js.php` uses php to insert the address of the YUI
-library.
+`index.php` is a rough "home page" that runs the test scripts. Other than that, it is pure Javascript.
 
 [YUI]: http://yuilibrary.com/ "Yahoo! User Interface - a JavaScript and CSS library for building richly interactive web applications"
 
