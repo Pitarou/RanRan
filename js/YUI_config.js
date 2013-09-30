@@ -123,8 +123,12 @@
   add_module_group('yui-ace-editor', [
     'widget',
     'ace-editor-noconflict',
-    'widget-child'
-  ]);
+    'collapsible-child',
+  ])
+  add_module_group('collapsible-child', [
+    'widget',
+    'widget-child',
+  ])
   add_module_group('editor-panel', [
     'yui-ace-editor',
     'collapsible-parent-panel',

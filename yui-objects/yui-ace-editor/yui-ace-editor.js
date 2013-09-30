@@ -23,7 +23,7 @@ YUI.add('yui-ace-editor', function(Y) {
       return isNaN(value) ? null : value;
     };
 
-    Y.RanRan.AceEditor = Y.Base.create('aceEditor', Y.Widget, [Y.WidgetChild], {
+    Y.RanRan.AceEditor = Y.Base.create('aceEditor', Y.Widget, [Y.RanRan.CollapsibleChild], {
       initializer: function() {
       },
 
@@ -122,7 +122,7 @@ YUI.add('yui-ace-editor', function(Y) {
 	      this.setValue(this.get('initialValue'));
 	    },
 
-	    doResize : function() {
+	    _doResize : function() {
 	      this._editor.resize();
 	      this._setScreenRows();
 		  },
@@ -164,4 +164,9 @@ YUI.add('yui-ace-editor', function(Y) {
     }
   );
 
-}, '0.1', {requires:['widget', 'ace-editor-noconflict', 'yui-ace-editor-css', 'widget-child']});
+}, '0.1', {requires:[
+  'widget',
+  'ace-editor-noconflict',
+  'yui-ace-editor-css',
+  'collapsible-child',
+]});

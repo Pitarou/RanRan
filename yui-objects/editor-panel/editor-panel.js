@@ -106,4 +106,5 @@ YUI.add('editor-panel', function (Y) {
 }, '0.1', {requires: [
 	'yui-ace-editor', 
 	'collapsible-parent-panel',
+  'editor-panel-css',
 ]});
