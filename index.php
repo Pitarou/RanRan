@@ -11,6 +11,7 @@ require_once('config.php');
     <h1>Integrating Ace Editor into YUI3</h1>
     <h2>Next steps</h2>
 	<ul>
+    <li>Add a REPL panel</li>
 	  <li>Integrate Web Workers</li>
 	  <li>Improve Flexbox compatibility for older browsers</li>
 	</ul>
@@ -80,9 +81,9 @@ function brainfuck(source, input) {
 console.log(brainfuck('++++++++++[>+++++++>++++++++++>+++>+<<<<-]>++.>+.+++++++..+++.>++.<<+++++++++++++++.>.+++.------.--------.>+.>.[[-],.]', "This message brought to you by Brainfuck 2."));
         
         </div>
+      </div>
 		  <div class="yui3-aceEditor">
 		    <div class="yui3-aceEditor-value" data-ace-read-only="true">})</div>
-		  </div>
       </div>
 		</div>
 		<div class="yui3-widget-ft"></div>

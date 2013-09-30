@@ -2,12 +2,14 @@ YUI.add('collapsible-parent-panel', function (Y) {
 
   var COLLAPSIBLE_PARENT_PANEL = 'collapsibleparentpanel';
   var COLLAPSED_CLASSNAME = Y.ClassNameManager.getClassName(COLLAPSIBLE_PARENT_PANEL, 'collapsed');
+  var COLLAPSE_BUTTON_CLASSNAME = Y.ClassNameManager.getClassName(COLLAPSIBLE_PARENT_PANEL, 'button', 'collapse');
 
   Y.namespace('RanRan');
   Y.RanRan.CollapsibleParentPanel = Y.Base.create('collapsibleparentpanel', Y.Panel, [Y.WidgetParent], {
     initializer: function () {
       this._addChildren();
     },
+
     render: function () {
       Y.Panel.prototype.render.call(this);
       // Borrow the css styling from the console buttons
@@ -19,6 +21,7 @@ YUI.add('collapsible-parent-panel', function (Y) {
         }
       }
     },
+
     bindUI: function () {
       this.plug(Y.Plugin.Drag);
       this.dd.addHandle('.yui3-widget-hd');
@@ -29,13 +32,28 @@ YUI.add('collapsible-parent-panel', function (Y) {
       this.resize.set('autoHide', true);
       this.after('collapsedChange', Y.bind(this._afterCollapsedChange, this));
     },
+
     syncUI: function () {
       if (this.get('collapsed')) {
         this._afterCollapsedChange();
       };
     },
-    _addChildren: function () {},
+
+    _addChildren: function () {
+      var parent = this;
+      var children = this._getChildren();
+      children.each(function (child) {
+        parent.add({
+          contentBox: child,
+          render: true,
+        });
+      });
+    },
+
+    _getChildren: function () {return new Y.NodeList()},
+
     _resizeChildren: function () {},
+
     _afterCollapsedChange: function () {
       var collapsed = this.get('collapsed');
       var boundingBox = this.get('boundingBox');
@@ -96,5 +114,4 @@ YUI.add('collapsible-parent-panel', function (Y) {
   'dd-plugin',
   'dd-constrain',
   'resize-plugin',
-  'widget-child',
 ]});

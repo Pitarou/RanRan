@@ -19,8 +19,8 @@
 /* The .yui3-collapsibleparentpanel-collapsed class:
  *  - makes the body and footer disappear
  *  - makes the resize handles disappear
- *  - adds rounded corners to the head (because we can't see the body's
- *    pretty rounded corners)
+ *  - adds rounded corners to the head (to give the impression
+ *    that the body and footer have collapsed "into" the head)
  */
 .yui3-collapsibleparentpanel-collapsed .yui3-resize-handles-wrapper {
   display: none;

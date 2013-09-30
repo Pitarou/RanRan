@@ -1,39 +1,21 @@
-YUI.add("yui-ace-editor", function(Y) {
+YUI.add('yui-ace-editor', function(Y) {
 
-    var AceEditor = function (config) {
-      AceEditor.superclass.constructor.apply(this, arguments);
-    }
-    AceEditor.NAME = "aceEditor";
-	  AceEditor.INPUT_CLASS = Y.ClassNameManager.getClassName(AceEditor.NAME, "value");
-	  AceEditor.EDITOR_NODE_TEMPLATE = "<div>{value}</div>";
-	  AceEditor.DEFAULT_READ_ONLY_THEME = "dawn";
-	  AceEditor.DEFAULT_EDITABLE_THEME = "chrome";
+    var ACE_EDITOR = 'aceEditor';
 
-    // The attribute configuration for the widget.
-    // This defines the core user facing state of the widget
-    AceEditor.ATTRS = {
-      initialValue : {value: "default content",},
-      theme: {value: null,},
-		  mode: {value: 'javascript',},
-		  readOnly: {value: false,},
-		  fontSize: {value: 12,},
-    };
-    
-    
-    // Functions to parse data-ace-name="..." attributes from the
+    // Functions to parse data-ace-name='...' attributes from the
     // src node.
     var get_text_value = function (srcNode, value_name) {
-      var value = srcNode.one('.'+AceEditor.INPUT_CLASS).getAttribute('data-ace-' +value_name);
+      var value = srcNode.one('.'+Y.RanRan.AceEditor.INPUT_CLASS).getAttribute('data-ace-' +value_name);
       return value ? value : null;
     };
 
-    // Returns false for null, undefined, "false", "0", "00.00", and so on.
+    // Returns null for null, undefined, 'false', '0', '00.00', and so on.
     // Returns true for anything else.
     var get_boolean_value = function (srcNode, value_name) {
       var value = get_text_value(srcNode, value_name);
       if (!value) return null;
-      return value ? value.toLowerCase() !== "false" && parseFloat(value) !== 0
-                   : null
+      return value ? value.toLowerCase() !== 'false' && parseFloat(value) !== 0
+                   : null;
     };
     
     var get_numeric_value = function (srcNode, value_name) {
@@ -41,25 +23,7 @@ YUI.add("yui-ace-editor", function(Y) {
       return isNaN(value) ? null : value;
     };
 
-    AceEditor.HTML_PARSER = {
-        initialValue: function (srcNode) {
-          return srcNode.get('text');
-        },
-        readOnly: function (srcNode) {
-          return get_boolean_value(srcNode, 'read-only');
-        },
-        theme: function(srcNode) {
-          return get_text_value(srcNode, 'theme');
-        },
-        mode: function(srcNode) {
-          return get_text_value(srcNode, 'mode');
-        },
-        fontSize: function(srcNode) {
-          return get_numeric_value(srcNode, 'font-size');
-        },
-    };
-
-    Y.extend(AceEditor, Y.Widget, {
+    Y.RanRan.AceEditor = Y.Base.create('aceEditor', Y.Widget, [Y.WidgetChild], {
       initializer: function() {
       },
 
@@ -67,11 +31,11 @@ YUI.add("yui-ace-editor", function(Y) {
       },
 
       renderUI : function() {
-			   var contentBox = this.get("contentBox");
-			   this._aceNode = contentBox.one('.'+AceEditor.INPUT_CLASS);
+			   var contentBox = this.get('contentBox');
+			   this._aceNode = contentBox.one('.'+Y.RanRan.AceEditor.INPUT_CLASS);
 			   if (!this._aceNode) {
-			     this._aceNode = Y.Node.create(Y.Lang.sub(AceEditor.EDITOR_NODE_TEMPLATE, {value: this.get('initialValue')}));
-			     this._aceNode.addClass(AceEditor.INPUT_CLASS);
+			     this._aceNode = Y.Node.create(Y.Lang.sub(Y.RanRan.AceEditor.EDITOR_NODE_TEMPLATE, {value: this.get('initialValue')}));
+			     this._aceNode.addClass(Y.RanRan.AceEditor.INPUT_CLASS);
 			     contentBox.append(this._aceNode);
 			   }
 			   this._editor = ace.edit(this._aceNode.getDOMNode());
@@ -90,22 +54,24 @@ YUI.add("yui-ace-editor", function(Y) {
           this._renderer.updateFull();
         }, this));
         this.after('fontSizeChange', Y.bind(this._setEditorFontSize, this));
-		this._editor.on('change', Y.bind(this._onEditorChange, this));
-	  },
+        this._editor.on('change', Y.bind(this._onEditorChange, this));
+      },
 
       syncUI : function() {
         this._setEditorMode();
         this._setEditorFontSize();
         this._setReadOnlyStatus();
       },
+
       _setEditorTheme : function() {
         var theme = this.get('theme');
         if (!theme) {
-          theme = this.get('readOnly') ? AceEditor.DEFAULT_READ_ONLY_THEME 
-                                       : AceEditor.DEFAULT_EDITABLE_THEME;
+          theme = this.get('readOnly') ? Y.RanRan.AceEditor.DEFAULT_READ_ONLY_THEME 
+                                       : Y.RanRan.AceEditor.DEFAULT_EDITABLE_THEME;
         }
         this._editor.setTheme('ace/theme/' + theme);
       },
+
       _setReadOnlyStatus : function () {
         var readOnly = this.get('readOnly');
         this._editor.setReadOnly(readOnly);
@@ -123,13 +89,16 @@ YUI.add("yui-ace-editor", function(Y) {
         this.get('contentBox').ancestor().replaceClass(oldClass, newClass);
         this._setScreenRows();
       },
+
       _setEditorMode : function () {
         this._session.setMode('ace/mode/' + this.get('mode'));
       },
+
       _setEditorFontSize: function () {
         this._editor.setFontSize(this.get('fontSize'));
         this._setScreenRows();
       },
+
       _setScreenRows: function() {
         if (this.get('readOnly')) {
           var rows = this._session.getScreenLength();
@@ -140,20 +109,59 @@ YUI.add("yui-ace-editor", function(Y) {
       _onEditorChange: function () {
         this.fire('edited');
       },
+
 		  getValue : function() {
         return this._editor.getValue();
 	    },
+
 	    setValue : function(new_value) {
 	      this._editor.setValue(new_value);
 	    },
+
 	    revert : function() {
 	      this.setValue(this.get('initialValue'));
 	    },
+
 	    doResize : function() {
 	      this._editor.resize();
 	      this._setScreenRows();
 		  },
-   });
 
-   Y.namespace("RanRan").AceEditor = AceEditor;
-}, "0.1", {requires:["widget", "ace-editor-noconflict", "yui-ace-editor-css"]});
+    }, {
+      HTML_PARSER: {
+        initialValue: function (srcNode) {
+          return srcNode.get('text');
+        },
+        readOnly: function (srcNode) {
+          return get_boolean_value(srcNode, 'read-only');
+        },
+        theme: function(srcNode) {
+          return get_text_value(srcNode, 'theme');
+        },
+        mode: function(srcNode) {
+          return get_text_value(srcNode, 'mode');
+        },
+        fontSize: function(srcNode) {
+          return get_numeric_value(srcNode, 'font-size');
+        },
+      },
+
+      NAME: ACE_EDITOR,
+      INPUT_CLASS: Y.ClassNameManager.getClassName(ACE_EDITOR, 'value'),
+      EDITOR_NODE_TEMPLATE: '<div>{value}</div>',
+      DEFAULT_READ_ONLY_THEME: 'dawn',
+      DEFAULT_EDITABLE_THEME: 'chrome',
+
+      // The attribute configuration for the widget.
+      // This defines the core user facing state of the widget
+      ATTRS: {
+        initialValue : {value: 'default content',},
+        theme: {value: null,},
+        mode: {value: 'javascript',},
+        readOnly: {value: false,},
+        fontSize: {value: 12,},
+      },
+    }
+  );
+
+}, '0.1', {requires:['widget', 'ace-editor-noconflict', 'yui-ace-editor-css', 'widget-child']});

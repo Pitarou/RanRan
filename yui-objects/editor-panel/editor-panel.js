@@ -1,15 +1,8 @@
 YUI.add('editor-panel', function (Y) {
-  Y.RanRan.ChildEditor = Y.Base.create('childEditor', Y.RanRan.AceEditor, [Y.WidgetChild], {
-    // prototype properties
-  }, {
-    // static properties   
-  });
-  
   var EDITORPANEL = 'editorpanel';
   var DEFAULT_MIN_WIDTH = Y.RanRan.Config.DEFAULT_MIN_WIDTH;
   var DEFAULT_WIDTH = Y.RanRan.Config.DEFAULT_WIDTH;
   var INITIAL_HEIGHT = Y.RanRan.Config.DEFAULT_INITIAL_HEIGHT;
-  var COLLAPSED_CLASSNAME = Y.ClassNameManager.getClassName(EDITORPANEL, 'collapsed');
   var COLLAPSE_BUTTON_CLASSNAME = Y.ClassNameManager.getClassName(EDITORPANEL, 'button', 'collapse');
   
   Y.RanRan.EditorPanel = Y.Base.create(EDITORPANEL, Y.RanRan.CollapsibleParentPanel, [], {
@@ -24,20 +17,13 @@ YUI.add('editor-panel', function (Y) {
       this.on('edited', Y.bind(this._onEdited, this));
     },
     
-    _addChildren: function() {
-      var parent = this;
-      var children = this.get('contentBox').all('.yui3-widget-bd .yui3-aceEditor');
-      children.each(function (child) {
-        parent.add({
-          contentBox: child,
-          render: true,
-        });
-      });
+    _getChildren: function () {
+      return this.get('contentBox').all('.yui3-widget-bd .yui3-aceEditor');
     },
      
     _resizeChildren: function() {
       this.each(function(child) {
-        if (child.name === 'childEditor') child.doResize();
+        if (child.name === 'aceEditor') child.doResize();
       });
     },
      
@@ -90,7 +76,7 @@ YUI.add('editor-panel', function (Y) {
     // static properties
     ATTRS : {
 	    compiled: false,
-      defaultChildType: {value: Y.RanRan.ChildEditor,},
+      defaultChildType: {value: Y.RanRan.AceEditor,},
 		  buttons: {valueFn: function () {return [
 		    {
 			    name: 'collapse',
