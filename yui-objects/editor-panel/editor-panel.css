@@ -1,15 +1,1 @@
-/* Put the editable content in flexboxes,
- * so it automatically resizes to fill the
- * available space.
- */
-.yui3-editorpanel-content .yui3-widget-bd,
-.yui3-editorpanel-content .yui3-widget-bd .yui3-aceeditor-editable,
-.yui3-editorpanel-content .yui3-widget-bd .yui3-aceeditor-editable .yui3-aceeditor-content {
-  display: flex;
-  flex-direction: column;
-}
-.yui3-editorpanel-content .yui3-widget-bd .yui3-aceeditor-editable,
-.yui3-editorpanel-content .yui3-widget-bd .yui3-aceeditor-editable .yui3-aceeditor-content,
-.yui3-editorpanel-content .yui3-widget-bd .yui3-aceeditor-editable .yui3-aceeditor-content .ace_editor {
-  flex: 1 1 auto;
-}
+

@@ -55,9 +55,8 @@ YUI.add('collapsible-parent-panel', function (Y) {
     _resizeChildren: function () {},
 
     _afterCollapsedChange: function () {
-      var collapsed = this.get('collapsed');
       var boundingBox = this.get('boundingBox');
-      if (collapsed) {
+      if (this.get('collapsed')) {
         this.set('expandedWidth', boundingBox.get('offsetWidth'));
         boundingBox.set('offsetWidth', this.get('minWidth'));
         boundingBox.addClass(COLLAPSED_CLASSNAME);
@@ -73,6 +72,7 @@ YUI.add('collapsible-parent-panel', function (Y) {
                    this.getStdModNode(Y.WidgetStdMod.FOOTER).get('offsetHeight');
       boundingBox.set('offsetHeight', height);
     },
+
     _toggle_collapsed: function() {
       this.set('collapsed', !this.get('collapsed'));
     },

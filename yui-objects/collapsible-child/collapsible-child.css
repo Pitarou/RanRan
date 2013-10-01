@@ -1,0 +1,13 @@
+
+
+.yui3-collapsibleparentpanel .yui3-widget-stdmod .yui3-widget-bd,
+.yui3-collapsibleparentpanel .yui3-widget-stdmod .yui3-widget-bd .yui3-collapsiblechild-flexbox,
+.yui3-collapsibleparentpanel .yui3-widget-stdmod .yui3-widget-bd .yui3-collapsiblechild-flexbox > * {
+  display: flex;
+  flex-direction: column;
+}
+.yui3-collapsibleparentpanel .yui3-widget-stdmod .yui3-widget-bd .yui3-collapsiblechild-flexbox,
+.yui3-collapsibleparentpanel .yui3-widget-stdmod .yui3-widget-bd .yui3-collapsiblechild-flexbox > *,
+.yui3-collapsibleparentpanel .yui3-widget-stdmod .yui3-widget-bd .yui3-collapsiblechild-flexbox > * > * {
+  flex: 1 1 auto;
+}

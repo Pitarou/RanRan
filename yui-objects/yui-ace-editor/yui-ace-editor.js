@@ -47,6 +47,7 @@ YUI.add('yui-ace-editor', function(Y) {
 		    },
 
       bindUI : function() {
+        Y.RanRan.CollapsibleChild.prototype.bindUI.apply(this, arguments);
         this.after('themeChange', Y.bind(this._setEditorTheme, this));
         this.after('modeChange', Y.bind(this._setEditorMode, this));
         this.after('readOnlyChange', Y.bind(function () {
@@ -58,6 +59,7 @@ YUI.add('yui-ace-editor', function(Y) {
       },
 
       syncUI : function() {
+        Y.RanRan.CollapsibleChild.prototype.syncUI.apply(this, arguments);
         this._setEditorMode();
         this._setEditorFontSize();
         this._setReadOnlyStatus();
@@ -144,6 +146,9 @@ YUI.add('yui-ace-editor', function(Y) {
         fontSize: function(srcNode) {
           return get_numeric_value(srcNode, 'font-size');
         },
+        flexbox: function(srcNode) {
+          return get_boolean_value(srcNode, 'flexbox');
+        }
       },
 
       NAME: ACE_EDITOR,

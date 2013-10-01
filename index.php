@@ -11,6 +11,7 @@ require_once('config.php');
     <h1>Integrating Ace Editor into YUI3</h1>
     <h2>Next steps</h2>
 	<ul>
+    <li>Make CollapsibleChild handle flexbox.</li>
     <li>Add a REPL panel</li>
 	  <li>Integrate Web Workers</li>
 	  <li>Improve Flexbox compatibility for older browsers</li>
@@ -24,7 +25,7 @@ require_once('config.php');
 {</div>
 		  </div>
 		  <div class="yui3-aceEditor">
-		    <div class="yui3-aceEditor-value">// Brainfuck: everybody's favourite esoteric language.
+		    <div class="yui3-aceEditor-value" data-ace-flexbox="true">// Brainfuck: everybody's favourite esoteric language.
 // Learn more at: http://en.wikipedia.org/wiki/Brainfuck
 
 function brainfuck(source, input) {
