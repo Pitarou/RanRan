@@ -141,6 +141,7 @@
     'dd-plugin',
     'dd-constrain',
     'resize-plugin',
+    'escape',
   ]);
   add_module_group('worker', ['message-processor', 'base'], false, true);
   add_module_group('message-processor', [], false, true);

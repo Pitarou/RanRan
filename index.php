@@ -11,88 +11,92 @@ require_once('config.php');
     <h1>Integrating Ace Editor into YUI3</h1>
     <h2>Next steps</h2>
 	<ul>
-    <li>Make CollapsibleChild handle flexbox.</li>
     <li>Add a REPL panel</li>
 	  <li>Integrate Web Workers</li>
 	  <li>Improve Flexbox compatibility for older browsers</li>
 	</ul>
-    <div id="console"></div>
-	<div id="editor-panel">
-		<div class="yui3-widget-hd">Editor&nbsp;Panel</div>
+  <div id="console"></div>
+  <div id="collapsible-panel" data-collapsibleparentpanel-title="Another panel">
+    <div class="yui3-widget-bd">
+      <div class="yui3-collapsibleparentpanel-scrollbox">
+        Some content
+      </div>
+    </div>
+  </div>
+	<div id="editor-panel" data-collapsibleparentpanel-title="Editor Panel">
+		<div class="yui3-widget-hd"></div>
 		<div class="yui3-widget-bd">
-		  <div class="yui3-aceEditor">
-		    <div class="yui3-aceEditor-value" data-ace-read-only="true">(function ()
-{</div>
-		  </div>
-		  <div class="yui3-aceEditor">
-		    <div class="yui3-aceEditor-value" data-ace-flexbox="true">// Brainfuck: everybody's favourite esoteric language.
-// Learn more at: http://en.wikipedia.org/wiki/Brainfuck
+        <div class="yui3-aceEditor">
+          <div class="yui3-aceEditor-value" data-ace-read-only="true">(function ()
+  {</div>
+        </div>
+        <div class="yui3-aceEditor">
+          <div class="yui3-aceEditor-value" data-ace-flexbox="true" data-ace-show-gutter="true">// Everybody's favourite esoteric language.
+  // Learn more at: http://en.wikipedia.org/wiki/Brainfuck
 
-function brainfuck(source, input) {
-    var stack = [];
-    var output = "";
-    var input_index = 0; 
-    var cells = [0];
-    var c = 0;
-    for (var i = 0; i < source.length; ++i) {
-        var s = source[i];
-        if (stack[0] === null) {
-            switch (s) {
-                case '[':
-                    stack.unshift(null);
-                    break;
-                case ']':
-                    stack.shift();
-           }
-        } else {
-            switch (s) {
-                case '+':
-                    cells[c]++;
-                    break;
-                case '-':
-                    cells[c]--;
-                    break;
-                case '>':
-                    if (++c === cells.length) cells.push(0);
-                    break;
-                case '<':
-                    if (c) c--;
-                    else cells.unshift(0);
-                    break;
-                case '.':
-                    output += String.fromCharCode(cells[c]);
-                    break;
-                case ',':
-                    if (input_index < input.length) cells[c] = input.charCodeAt(input_index++);
-                    break;
-                case '[':
-                    stack.unshift(cells[c] ? i : null);
-                    break;
-                case ']':
-                    if (!stack.length) throw "unexpected ']'";
-                    if (!cells[c]) stack.shift();
-                    else i = stack[0];
-            }
-        }
-    }
-    if (stack.length) throw "missing ']'";
-    return output;
-}
+  function bf(source, input) {
+      var stack = [];
+      var output = "";
+      var input_index = 0; 
+      var cells = [0];
+      var c = 0;
+      for (var i = 0; i < source.length; ++i) {
+          var s = source[i];
+          if (stack[0] === null) {
+              switch (s) {
+                  case '[':
+                      stack.unshift(null);
+                      break;
+                  case ']':
+                      stack.shift();
+             }
+          } else {
+              switch (s) {
+                  case '+':
+                      cells[c]++;
+                      break;
+                  case '-':
+                      cells[c]--;
+                      break;
+                  case '>':
+                      if (++c === cells.length) cells.push(0);
+                      break;
+                  case '<':
+                      if (c) c--;
+                      else cells.unshift(0);
+                      break;
+                  case '.':
+                      output += String.fromCharCode(cells[c]);
+                      break;
+                  case ',':
+                      if (input_index < input.length) cells[c] = input.charCodeAt(input_index++);
+                      break;
+                  case '[':
+                      stack.unshift(cells[c] ? i : null);
+                      break;
+                  case ']':
+                      if (!stack.length) throw "unexpected ']'";
+                      if (!cells[c]) stack.shift();
+                      else i = stack[0];
+              }
+          }
+      }
+      if (stack.length) throw "missing ']'";
+      return output;
+  }
 
-console.log(brainfuck('++++++++++[>+++++++>++++++++++>+++>+<<<<-]>++.>+.+++++++..+++.>++.<<+++++++++++++++.>.+++.------.--------.>+.>.[[-],.]', "This message brought to you by Brainfuck 2."));
-        
+  console.log(bf('++++++++++[>+++++++>++++++++++>+++>+<<<<-]>++.>+.+++++++..+++.>++.<<+++++++++++++++.>.+++.------.--------.>+.>.[[-],.]', "This message brought to you by everybody's favourite esolang.")); </div>
+        </div>
+        <div class="yui3-aceEditor">
+          <div class="yui3-aceEditor-value" data-ace-read-only="true">})</div>
         </div>
       </div>
-		  <div class="yui3-aceEditor">
-		    <div class="yui3-aceEditor-value" data-ace-read-only="true">})</div>
-      </div>
-		</div>
 		<div class="yui3-widget-ft"></div>
-    </div>
+  </div>
 
-    <script src="<?php echo $YUI_CONFIG; ?>" type="text/javascript"></script>
+  <script src="<?php echo $YUI_CONFIG; ?>" type="text/javascript"></script>
 
-    <script src="<?php echo $YUI; ?>" type="text/javascript"></script>
+  <script src="<?php echo $YUI; ?>" type="text/javascript"></script>
 
     <script type="text/javascript">
     
@@ -104,6 +108,11 @@ console.log(brainfuck('++++++++++[>+++++++>++++++++++>+++>+<<<<-]>++.>+.+++++++.
 	       render: true,
 	       collapsed: true,
 	     });
+       panel2 = new Y.RanRan.CollapsibleParentPanel({
+        srcNode: '#collapsible-panel',
+        render: true,
+        collapsed: false,
+      });
 	     worker = new Y.RanRan.Worker();
        Y.use('test-console', function (Y) {
          new Y.Test.Console().render();

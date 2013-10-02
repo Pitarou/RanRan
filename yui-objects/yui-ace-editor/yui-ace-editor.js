@@ -55,6 +55,8 @@ YUI.add('yui-ace-editor', function(Y) {
           this._renderer.updateFull();
         }, this));
         this.after('fontSizeChange', Y.bind(this._setEditorFontSize, this));
+        this.after('flexboxChange', Y.bind(this._afterFlexboxChange, this));
+        this.after('showGutterChange', Y.bind(this._afterShowGutterChange, this));
         this._editor.on('change', Y.bind(this._onEditorChange, this));
       },
 
@@ -63,6 +65,8 @@ YUI.add('yui-ace-editor', function(Y) {
         this._setEditorMode();
         this._setEditorFontSize();
         this._setReadOnlyStatus();
+        this._afterFlexboxChange();
+        this._afterShowGutterChange();
       },
 
       _setEditorTheme : function() {
@@ -79,7 +83,6 @@ YUI.add('yui-ace-editor', function(Y) {
         this._editor.setReadOnly(readOnly);
         this._editor.setHighlightActiveLine(!readOnly);
         this._setEditorTheme();
-        this._renderer.setShowGutter(!readOnly);
         if (readOnly) {
           this._renderer.hideCursor();
         } else {
@@ -102,7 +105,7 @@ YUI.add('yui-ace-editor', function(Y) {
       },
 
       _setScreenRows: function() {
-        if (this.get('readOnly')) {
+        if (!this.get('flexbox')) {
           var rows = this._session.getScreenLength();
           this.get('contentBox').setStyle('height', rows+'em');
         }
@@ -110,6 +113,17 @@ YUI.add('yui-ace-editor', function(Y) {
 	  
       _onEditorChange: function () {
         this.fire('edited');
+      },
+
+      _afterFlexboxChange: function () {
+        if (!this.get('flexbox')) {
+          this._setScreenRows();
+        }
+      },
+
+      _afterShowGutterChange: function () {
+        this._renderer.setShowGutter(this.get('showGutter'));
+        this._renderer.updateFull();
       },
 
 		  getValue : function() {
@@ -148,7 +162,10 @@ YUI.add('yui-ace-editor', function(Y) {
         },
         flexbox: function(srcNode) {
           return get_boolean_value(srcNode, 'flexbox');
-        }
+        },
+        showGutter: function (srcNode) {
+          return get_boolean_value(srcNode, 'show-gutter');
+        },
       },
 
       NAME: ACE_EDITOR,
@@ -161,10 +178,12 @@ YUI.add('yui-ace-editor', function(Y) {
       // This defines the core user facing state of the widget
       ATTRS: {
         initialValue : {value: 'default content',},
+        readOnly: {value: false,},
         theme: {value: null,},
         mode: {value: 'javascript',},
-        readOnly: {value: false,},
         fontSize: {value: 12,},
+        flexbox: {value: false,},
+        showGutter: {value: false},
       },
     }
   );

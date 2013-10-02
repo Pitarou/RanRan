@@ -21,6 +21,8 @@ YUI.add('collapsible-child', function (Y) {
       }
     },
 
+    isCollapsibleChild: true,
+
     _onFlexboxChange: function () {
       var boundingBox = this.get('boundingBox');
       if (this.get('flexbox')) {
@@ -36,4 +38,5 @@ YUI.add('collapsible-child', function (Y) {
       },
     },
   });
+
 }, '0.1', {requires: ['widget', 'widget-child', 'collapsible-child-css']});

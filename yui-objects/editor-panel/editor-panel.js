@@ -10,14 +10,14 @@ YUI.add('editor-panel', function (Y) {
     bindUI: function() {
       Y.RanRan.CollapsibleParentPanel.prototype.bindUI.call(this);
       this.after('compiledChange', Y.bind(this._after_compiledChange, this));
-      var parent = this;
+      var me = this;
       this.each(function (child) {
-        child.after('edited', Y.bind(parent._afterChildEdited, parent));
+        child.after('edited', Y.bind(me._afterChildEdited, me));
       });
       this.on('edited', Y.bind(this._onEdited, this));
     },
     
-    _getChildren: function () {
+    _getChildrenFromMarkup: function () {
       return this.get('contentBox').all('.yui3-widget-bd .yui3-aceEditor');
     },
      
