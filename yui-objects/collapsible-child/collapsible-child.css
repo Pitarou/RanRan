@@ -1,5 +1,4 @@
-
-
+/* Making the .yui3-collapsiblechild-flexbox live up to its promise. */
 .yui3-collapsibleparentpanel .yui3-widget-stdmod .yui3-widget-bd,
 .yui3-collapsibleparentpanel .yui3-widget-stdmod .yui3-widget-bd .yui3-collapsiblechild-flexbox,
 .yui3-collapsibleparentpanel .yui3-widget-stdmod .yui3-widget-bd .yui3-collapsiblechild-flexbox > * {

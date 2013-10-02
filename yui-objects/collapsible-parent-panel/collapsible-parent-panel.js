@@ -67,6 +67,19 @@ YUI.add('collapsible-parent-panel', function (Y) {
       this.addWidgetContent(child);
     },
 
+    setScrollTop: function (scrollTop) {
+      this._contentNode.getDOMNode().scrollTop = scrollTop;
+    },
+
+    getScrollTop: function () {
+      return this._contentNode.getDOMNode().scrollTop;
+    },
+
+
+    scrollToBottom: function () {
+      this.setScrollTop(1000000000);
+    },
+
     _addChildrenFromMarkup: function () {
       var me = this;
       var children = this._getChildrenFromMarkup();
@@ -80,8 +93,12 @@ YUI.add('collapsible-parent-panel', function (Y) {
 
     _getChildrenFromMarkup: function () {return new Y.NodeList()},
 
-    _resizeChildren: function () {},
-
+    _resizeChildren: function() {
+      this.each(function(child) {
+        if (child.doResize) child.doResize();
+      });
+    },
+     
     _afterCollapsedChange: function () {
       var boundingBox = this.get('boundingBox');
       if (this.get('collapsed')) {

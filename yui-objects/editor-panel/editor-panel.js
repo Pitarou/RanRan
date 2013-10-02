@@ -21,12 +21,6 @@ YUI.add('editor-panel', function (Y) {
       return this.get('contentBox').all('.yui3-widget-bd .yui3-aceEditor');
     },
      
-    _resizeChildren: function() {
-      this.each(function(child) {
-        if (child.name === 'aceEditor') child.doResize();
-      });
-    },
-     
     _getCode: function() {
       var code = '';
       this.each(function (child) {
@@ -100,7 +94,8 @@ YUI.add('editor-panel', function (Y) {
 		      classNames: [],
 			  disabled: true,
 		    },
-		  ]},},
+		  ]},
+      },
     },  
   });
 }, '0.1', {requires: [

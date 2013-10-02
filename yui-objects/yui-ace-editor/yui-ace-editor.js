@@ -25,6 +25,7 @@ YUI.add('yui-ace-editor', function(Y) {
 
     Y.RanRan.AceEditor = Y.Base.create('aceEditor', Y.Widget, [Y.RanRan.CollapsibleChild], {
       initializer: function() {
+        this._dontFireOnEditorChange = false;
       },
 
       destructor : function() {
@@ -67,6 +68,38 @@ YUI.add('yui-ace-editor', function(Y) {
         this._setReadOnlyStatus();
         this._afterFlexboxChange();
         this._afterShowGutterChange();
+        this._initializeCommands();
+      },
+
+
+      focus: function () {
+        this._editor.focus();
+      },
+
+      suppressEditedEvent: function (suppress) {
+        this._dontFireOnEditorChange = suppress;
+        return this;
+      },
+
+      // typical command
+      //
+      // {
+      //   name: 'dostuff',
+      //   bindKey: {
+      //     win: 'Ctrl-X',
+      //     mac: 'Command-X',
+      //   }, 
+      //   exec: function () {do_it();},
+      // }
+      addCommand: function (command) {
+        this._editor.commands.addCommand(command);
+      },
+
+      _initializeCommands: function () {
+        var commands = this.get('commands');
+        for (var i = 0; i < commands.length; ++i) {
+          this.addCommand(commands[i]);
+        }
       },
 
       _setEditorTheme : function() {
@@ -92,7 +125,7 @@ YUI.add('yui-ace-editor', function(Y) {
         var oldClass = this.getClassName(classNameSuffixes[!readOnly]);
         var newClass = this.getClassName(classNameSuffixes[readOnly]);
         this.get('contentBox').ancestor().replaceClass(oldClass, newClass);
-        this._setScreenRows();
+        this._setScreenRows(true);
       },
 
       _setEditorMode : function () {
@@ -104,15 +137,24 @@ YUI.add('yui-ace-editor', function(Y) {
         this._setScreenRows();
       },
 
-      _setScreenRows: function() {
+      _setScreenRows: function(first_time) {
         if (!this.get('flexbox')) {
           var rows = this._session.getScreenLength();
-          this.get('contentBox').setStyle('height', rows+'em');
+          if (first_time || this._screenRows !== rows) {
+            this.get('contentBox').setStyle('height', rows+'em');
+            this._screenRows = rows;
+            this.doResize();
+          }
         }
       },
 	  
       _onEditorChange: function () {
-        this.fire('edited');
+        if (!this.get('flexbox')) {
+          this._setScreenRows();
+        }
+        if (!this._dontFireOnEditorChange) {
+          this.fire('edited');
+        }
       },
 
       _afterFlexboxChange: function () {
@@ -132,11 +174,18 @@ YUI.add('yui-ace-editor', function(Y) {
 
 	    setValue : function(new_value) {
 	      this._editor.setValue(new_value);
+        return this;
 	    },
 
 	    revert : function() {
 	      this.setValue(this.get('initialValue'));
+        return this;
 	    },
+
+      clearSelection: function () {
+        this._editor.clearSelection();
+        return this;
+      },
 
 	    _doResize : function() {
 	      this._editor.resize();
@@ -184,6 +233,7 @@ YUI.add('yui-ace-editor', function(Y) {
         fontSize: {value: 12,},
         flexbox: {value: false,},
         showGutter: {value: false},
+        commands: {value: []},
       },
     }
   );
