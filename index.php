@@ -30,7 +30,7 @@ require_once('config.php');
   {</div>
         </div>
         <div class="yui3-aceEditor">
-          <div class="yui3-aceEditor-value" data-ace-flexbox="true" data-ace-show-gutter="true">// Everybody's favourite esoteric language.
+          <div class="yui3-aceEditor-value" data-ace-flexbox="true" data-ace-show-gutter="true" data-ace-focused="true">// Everybody's favourite esoteric language.
 // Learn more at: http://en.wikipedia.org/wiki/Brainfuck
 
 function bf(source, input) {
@@ -100,7 +100,7 @@ console.log(bf('++++++++++[>+++++++>++++++++++>+++>+<<<<-]>++.>+.+++++++..+++.>+
     <script type="text/javascript">
     
      // For some weird reason, I have to stage the loading in this sequence or ace-editor breaks.	 
-     YUI().use('ranran-base', 'console').use('node', 'dd-plugin', 'yui-ace-editor').use('editor-panel', 'worker', 'worker-test', 'message-processor-test', 'collapsible-parent-panel', function(Y) {
+     YUI().use('ranran-base', 'console').use('node', 'dd-plugin', 'yui-ace-editor').use('editor-panel', 'worker', 'worker-test', 'message-processor-test', 'collapsible-parent-panel', 'history-manager', 'history-manager-test', 'repl-panel', 'panel-manager', 'panel-manager-test', function(Y) {
 
 	     panel = new Y.RanRan.EditorPanel({
 	       srcNode: '#editor-panel',
@@ -108,99 +108,13 @@ console.log(bf('++++++++++[>+++++++>++++++++++>+++>+<<<<-]>++.>+.+++++++..+++.>+
 	       collapsed: true,
 	     });
 
-       repl_panel = new Y.RanRan.CollapsibleParentPanel({
+       repl_panel = new Y.RanRan.REPLPanel({
          srcNode: '#collapsible-panel',
          render: true,
-         collapsed: false,
+         collapsed: true,
        });
 
-       repl_panel.current = '';
-       repl_panel.history = [];
-       repl_panel.history_place = 0;
-       
-       repl_panel.newLine = function(editor) {
-         repl_panel.addWidgetChild(editor);
-         repl_panel.scrollToBottom();
-         editor.focus();
-       };
-       
-       repl_panel.eval = function() {
-         var editor = this.item(0);
-         var value = editor.getValue().trim();
-         if (value) {
-           var result = eval(value);
-           this.remove(0);
-           this.addDOMContent(Y.Escape.html(value) + '</br>');
-           this.addDOMContent(Y.Escape.html(result) + '</br>');
-           if (this.history_place === this.history.length) {
-             this.history.push(this.current);
-           }
-           this.current = '';
-           this.history_place = this.history.length;
-           editor.suppressEditedEvent(true)
-                 .revert()
-                 .suppressEditedEvent(false);
-           this.newLine(editor);
-         }
-       };
-
-       repl_panel.recall_history = function (place) {
-         var editor = this.item(0);
-         history = this.history;
-         place = this.history_place;
-         var new_value = place === history.length ? this.current : history[place];
-         editor.suppressEditedEvent(true)
-               .setValue(new_value)
-               .suppressEditedEvent(false)
-               .clearSelection();
-       };
-
-       repl_panel.history_forwards = function () {
-         var new_history_place = this.history_place + 1;
-         if (new_history_place <= this.history.length) {
-           this.history_place = new_history_place;
-           this.recall_history();
-         }
-       }
-
-       repl_panel.history_back = function () {
-         if (this.history_place) {
-           this.history_place--;
-           this.recall_history();
-         }
-       };
-
-       var eval_command = {
-         name: 'eval',
-         bindKey: {mac: 'Enter', win: 'Enter'},
-         exec: function () {repl_panel.eval();},
-       };
-       
-       var history_back_command = {
-         name: 'history_back',
-         bindKey: {mac: 'Up|Ctrl-P', win: 'Up'},
-         exec: function () {repl_panel.history_back()},
-       };
-
-       var history_forwards_command = {
-        name: 'history_forward',
-        bindKey: {mac: 'Down|Ctrl-N', win: 'Down'},
-        exec: function () {repl_panel.history_forwards()},
-       };
-
-       var editor_config = {
-         initialValue: '',
-         commands: [history_back_command, history_forwards_command, eval_command],
-        };
-
-        var repl_editor = new Y.RanRan.AceEditor(editor_config);
-
-        repl_editor.on('edited', function () {
-          repl_panel.history_place = repl_panel.history.length;
-          repl_panel.current = repl_editor.getValue();
-        });
-
-       repl_panel.newLine(repl_editor);
+       repl_panel.manager.create().add(panel);
 
 	     worker = new Y.RanRan.Worker();
        Y.use('test-console', function (Y) {

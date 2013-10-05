@@ -25,7 +25,9 @@ YUI.add('yui-ace-editor', function(Y) {
 
     Y.RanRan.AceEditor = Y.Base.create('aceEditor', Y.Widget, [Y.RanRan.CollapsibleChild], {
       initializer: function() {
-        this._dontFireOnEditorChange = false;
+        // Use this to distinguish changes made by UI interactions
+        // from changes made by calling this class's methods.
+        this._suppressChangedEvent = false;
       },
 
       destructor : function() {
@@ -59,6 +61,7 @@ YUI.add('yui-ace-editor', function(Y) {
         this.after('flexboxChange', Y.bind(this._afterFlexboxChange, this));
         this.after('showGutterChange', Y.bind(this._afterShowGutterChange, this));
         this._editor.on('change', Y.bind(this._onEditorChange, this));
+        this.after('focusedChange', Y.bind(this._afterFocusedChange, this));;
       },
 
       syncUI : function() {
@@ -69,17 +72,12 @@ YUI.add('yui-ace-editor', function(Y) {
         this._afterFlexboxChange();
         this._afterShowGutterChange();
         this._initializeCommands();
+        if (this.get('giveMeFocus')) {
+          this.focus();
+        };
+        this.removeAttr('giveMeFocus');
       },
 
-
-      focus: function () {
-        this._editor.focus();
-      },
-
-      suppressEditedEvent: function (suppress) {
-        this._dontFireOnEditorChange = suppress;
-        return this;
-      },
 
       // typical command
       //
@@ -152,7 +150,7 @@ YUI.add('yui-ace-editor', function(Y) {
         if (!this.get('flexbox')) {
           this._setScreenRows();
         }
-        if (!this._dontFireOnEditorChange) {
+        if (!this._suppressChangedEvent) {
           this.fire('edited');
         }
       },
@@ -171,9 +169,15 @@ YUI.add('yui-ace-editor', function(Y) {
 		  getValue : function() {
         return this._editor.getValue();
 	    },
+      
+      suppressChangedEvent: function (value) {
+        this._suppressChangedEvent = arguments.length ? value : true;
+        return this;
+      },
 
 	    setValue : function(new_value) {
 	      this._editor.setValue(new_value);
+        this._suppressChangedEvent = false;
         return this;
 	    },
 
@@ -191,6 +195,15 @@ YUI.add('yui-ace-editor', function(Y) {
 	      this._editor.resize();
 	      this._setScreenRows();
 		  },
+
+      _afterFocusedChange: function() {
+        var editor = this._editor;
+        if (this.get('focused')) {
+          editor.focus();
+        } else {
+          editor.blur();
+        }
+      },
 
     }, {
       HTML_PARSER: {
@@ -215,6 +228,12 @@ YUI.add('yui-ace-editor', function(Y) {
         showGutter: function (srcNode) {
           return get_boolean_value(srcNode, 'show-gutter');
         },
+        // The focused attribute is set to readOnly,
+        // so we set this giveMeFocus attribute instead,
+        // and then call this.focus() in syncUI.
+        giveMeFocus: function (srcNode) {
+          return get_boolean_value(srcNode, 'focused');
+        },
       },
 
       NAME: ACE_EDITOR,
@@ -234,6 +253,21 @@ YUI.add('yui-ace-editor', function(Y) {
         flexbox: {value: false,},
         showGutter: {value: false},
         commands: {value: []},
+        focused: {
+          setter: function (value) {
+            if (value && this.get('readOnly')) {
+              this._editor.blur();
+              return Y.Attribute.INVALID_VALUE;
+            }
+            else return !!value;
+          },
+          value: false,
+        },
+        // Temporary attribute that is removed by
+        // syncUI.
+        giveMeFocus: {
+          value: false,
+        },
       },
     }
   );

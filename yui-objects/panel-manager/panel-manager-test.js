@@ -109,7 +109,7 @@ YUI.add(
         Y.Assert.areSame(0, manager._next_panel_id);
         Y.Assert.isList(manager._layers);
         Y.Assert.isObjext(manager._panels);
-        Y.Assert.isFalse(manager._focused);
+        Y.Assert.isFalse(manager._focused_panel);
         Y.Assert.areSame(0, manager._z_min);
       },
       testCreateWithNoArgument: function () {
@@ -200,23 +200,36 @@ YUI.add(
       testFocus: function () {
         var p1 = new Panel();
         var p2 = new Panel();
-        function is_focused(is, is_not, details) {
-          Y.Assert.isTrue(is.get('focused'), 'correct one is focused ' + details);
-          Y.Assert.isFalse(is_not.get('focused'), 'correct one is not focused ' + details);
-          Y.Assert.areSame(is, p1.manager.manager._focused, 'manager knows which one is focused ' + details);
+        var p3 = new Panel();
+        var p4 = new Panel();
+        var ps = [p1, p2, p3, p4];
+        function is_focused(panel, details) {
+          for (var i = 0; i < ps.length; ++i) {
+            var p = ps[i];
+            if (p === panel) {
+              Y.Assert.isTrue(p.get('focused'), 'p' + (i+1) + ' is focused ' + details);
+            } else {
+              Y.Assert.isFalse(p.get('focused'), 'p' + (i+1) + ' is not focused ' + details);
+            }
+          }
+          Y.Assert.areSame(panel, p1.manager.manager._focused_panel, 'manager knows which one is focused ' + details);
         }
         function is_blurred(details) {
-          Y.Assert.isFalse(p1.get('focused'), 'p1 not focused ' + details);
-          Y.Assert.isFalse(p2.get('focused'), 'p2 not focused ' + details);
-          Y.Assert.isFalse(p1.manager.manager._focused, 'manager knows that nothing is focused' + details);
+          for (var i = 0; i < ps.length; ++i) {
+            var p = ps[i];
+            if (p) {
+              Y.Assert.isFalse(p.get('focused'), 'p' + (i+1) + ' not focused ' + details);
+            }
+          }
+          Y.Assert.isFalse(p1.manager.manager._focused_panel, 'manager knows that nothing is focused' + details);
         }
         p1.manager.create().add(p2);
         p1.set('focused', true);
-        is_focused(p1, p2, 'after p1 is focused for first time');
+        is_focused(p1, 'after p1 is focused for first time');
         p1.set('focused', true);
-        is_focused(p1, p2, 'after p1 refocused');
+        is_focused(p1, 'after p1 refocused');
         p2.focus();
-        is_focused(p2, p1, 'after p2 focused');
+        is_focused(p2, 'after p2 focused');
         p2.blur();
         is_blurred('after p2 blurred');
         p2.blur();
@@ -227,6 +240,12 @@ YUI.add(
         p2.focus();
         p2.manager.blurAll();
         is_blurred('after blurAll called on manager proxy');
+        p3.set('focused', true);
+        p1.focus();
+        p1.manager.add(p3);
+        is_focused(p3, 'after focused panel is added');
+        p2.manager.add(p4);
+        is_focused(p3, 'after blurred panel is added');
       },
 
       testBringToFront: function () {

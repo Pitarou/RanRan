@@ -10,7 +10,7 @@ YUI.add(
       this._panels = {};
       this._layers = [];
       this._z_min = arguments.length ? bottom_zIndex : 0;
-      this._focused = false;
+      this._focused_panel = false;
     };
 
     Y.RanRan.PanelManager.prototype = {
@@ -24,11 +24,11 @@ YUI.add(
         panel.manager.add = Y.bind(this.add, this);
         panel.manager.blurAll = Y.bind(this.blurAll, this);
         panel.manager.bringToFront = Y.bind(this.bringToFront, this, panel);
-        panel.manager.focus = Y.bind(this.focus, this, panel);
         panel.manager.frontFocus = Y.bind(this.frontFocus, this, panel);
         this._panels[id] = panel;
         this._sync_zIndex_with_layer(panel);
         panel.after('focusedChange', Y.bind(this._after_panel_focusedChange, this, panel));
+        this._after_panel_focusedChange(panel);
         return this;
       },
 
@@ -43,50 +43,58 @@ YUI.add(
       _after_panel_focusedChange: function(panel) {
         var focused = panel.get('focused');
         if (focused) {
-          this._focus(panel);
+          this._afterFocus(panel);
         } else {
-          this._blur(panel);
+          this._afterBlur(panel);
         }
       },
 
-      _focus: function (panel) {
-        var focused = this._focused;
-        if (focused === panel) {
+      _afterFocus: function (panel) {
+        var focused_panel = this._focused_panel;
+        if (focused_panel === panel) {
           // already focused, so do nothing
           return;
         }
-        this.blurAll();
-        this._focused = panel; 
+        this._focused_panel = panel; 
+        this._blur_all_panels_except_focused_panel();
       },
 
 
       focus: function (panel) {
         panel.set('focused', true);
-        // the _focus method will be triggered by
+        // the _afterFocus method will be triggered by
         // the panel's blurChange callback
       },
 
-      _blur: function (panel) {
-        var focused = this._focused;
-        if (focused !== panel) {
+      _afterBlur: function (panel) {
+        var focused_panel = this._focused_panel;
+        if (focused_panel !== panel) {
           // already blurred, so do nothing
           return;
         }
-        this._focused = false;
+        this._focused_panel = false;
       },
 
       blur: function (panel) {
         panel.set('focused', false);
-        // the _blur method will be triggered by
+        // the _afterBlur method will be triggered by
         // the panel's focusedChange callback
       },
 
-      blurAll: function () {
-        var focused = this._focused;
-        if (focused) {
-          this.blur(focused);
+      _blur_all_panels_except_focused_panel: function() {
+        var focused_panel = this._focused_panel;
+        var panels = this._layers;
+        for (var i = 0; i < panels.length; ++i) {
+          var panel = panels[i];
+          if (panel !== focused_panel) {
+            panel.blur();
+          }
         }
-        return this;
+      },
+
+      blurAll: function () {
+        this._focused_panel = false;
+        this._blur_all_panels_except_focused_panel();
       },
 
       bringToFront: function (panel) {

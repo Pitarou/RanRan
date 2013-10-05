@@ -64,7 +64,7 @@ YUI.add(
         this._current = '';
         this._sync_editor();
         this.scrollToBottom();
-        editor.focus();
+        this.set('focusedElement', editor);
       },
 
       // temporary hack, for testing purposes only!
@@ -105,6 +105,7 @@ YUI.add(
         this._history_to_current();
         this._current = this._editor.getValue();
       },
+
     }, {
     })
   },

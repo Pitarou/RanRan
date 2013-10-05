@@ -16,6 +16,15 @@ YUI.add('editor-panel', function (Y) {
       });
       this.on('edited', Y.bind(this._onEdited, this));
     },
+
+    syncUI: function () {
+      Y.RanRan.CollapsibleParentPanel.prototype.syncUI.apply(this, arguments);
+      this.each(Y.bind(function (child) {
+        if (child.get('focused')) {
+          this.set('focusedElement', child);
+        }
+      }, this));
+    },
     
     _getChildrenFromMarkup: function () {
       return this.get('contentBox').all('.yui3-widget-bd .yui3-aceEditor');

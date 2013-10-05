@@ -142,7 +142,16 @@
     'dd-constrain',
     'resize-plugin',
     'escape',
+    'managed-panel',
   ]);
   add_module_group('worker', ['message-processor', 'base'], false, true);
   add_module_group('message-processor', [], false, true);
+  add_module_group('history-manager', [], false, true);
+  add_module_group('repl-panel', [
+    'yui-ace-editor',
+    'collapsible-parent-panel',
+    'history-manager',
+  ]);
+  add_module_group('managed-panel', ['widget-stack', 'panel-manager']);
+  add_module_group('panel-manager', [], false, true);
 })();
