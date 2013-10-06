@@ -28,7 +28,8 @@
           Y.Assert.isFunction(arguments_to_array, 'simulated arguments_to_array created');
           Y.Assert.isFunction(postMessage, 'simulated postMessage created');
           Y.Assert.isFunction(handler.eval_and_assign_globals, 'eval_and_assign_globals created');
-          Y.Assert.isFunction(handler.add_functions, 'add_functions created');
+          Y.Assert.isFunction(handler.add_unprivileged_functions, 'add_unprivileged_functions created');
+          Y.Assert.isFunction(handler.add_privileged_functions, 'add_privileged_functions created');
           Y.Assert.isFunction(handler.call_functions, 'call_functions created');
         },
         
@@ -291,7 +292,7 @@
           var worker = this.worker;
           var str = "";
           var echo = function (arg) {str += arg;};
-          var shout = function (arg) {this.echo(arg);};
+          var shout = function (arg) {echo(arg);};
           worker.add_callout_functions({echo: echo});
           worker.add_functions({shout: shout});
           worker.functions.shout(21);
@@ -302,7 +303,7 @@
           var worker = this.worker;
           var str = '';
           function echo(arg) {str += arg;};
-          function shout(arg) {this.echo(arg);};
+          function shout(arg) {echo(arg);};
           worker.add_callout_functions({echo: echo});
           worker.add_functions({shout: shout});
           worker.functions.shout(49);
@@ -312,7 +313,7 @@
         testRealFunctionsCallCalloutsRoundTrip: function() {
           var worker = this.real_worker;
           var str = "";
-          var shout = function (arg) {this.echo(arg);};
+          var shout = function (arg) {echo(arg);};
           var test = this;
           var echo = function (arg) {
             str += arg;
@@ -403,8 +404,8 @@
           var _w = worker._worker;
           var test = this;
           worker.add_functions({foo: function () {}});
-          worker.add_functions({foo: function () {this.foo_callout()}});
-          worker.add_functions({bar: function () {this.bar_callout()}});
+          worker.add_functions({foo: function () {foo_callout()}});
+          worker.add_functions({bar: function () {bar_callout()}});
           worker.add_callout_functions({foo_callout: function () {
             test.resume(function () {
               Y.Assert.pass('set up worker for test');

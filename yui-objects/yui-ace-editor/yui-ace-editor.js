@@ -229,9 +229,10 @@ YUI.add('yui-ace-editor', function(Y) {
           return get_boolean_value(srcNode, 'show-gutter');
         },
         // The focused attribute is set to readOnly,
-        // so we set this giveMeFocus attribute instead,
-        // and then call this.focus() in syncUI.
-        giveMeFocus: function (srcNode) {
+        // so we set this 'hidden' attribute instead,
+        // call this.focus() in syncUI, and then
+        // remove it.
+        _giveMeFocus: function (srcNode) {
           return get_boolean_value(srcNode, 'focused');
         },
       },

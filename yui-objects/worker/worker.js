@@ -21,11 +21,25 @@
     return Array.prototype.slice.call(arg_list);
   }
   
-  var functions = {};
+  var unprivileged_function_definitions = {};
+  var privileged_functions = {};
+  functions = {};
+
+  function update_functions() {
+    try {
+      var new_functions = eval(create_safe_scope());
+    }
+    catch (e) {
+      console.log('failed');
+      console.log(create_safe_scope());
+    }
+    functions = new_functions;
+  }
+
+
 
   var handler = {
     add_handlers: function () {
-      var definitions = arguments;
       function add_handler_handler(name, definition) {
         var code = 'handler["' + name + '"] = ' + definition;
         eval(code);
@@ -34,20 +48,26 @@
     },
   
     eval_and_assign_globals: function () {
-      var definitions = arguments;
       var handler = function (name, definition) {
         eval(name + " = " + definition);
       };
-      process_messages(self, handler, definitions);
+      process_messages(self, handler, arguments);
     },
 
-    add_functions: function () {
-     var definitions = arguments;
-     var handler = function (name, definition) {
-       var new_function = eval('('+definition+')');
-       this[name] = new_function;
+    add_unprivileged_functions: function () {
+      var handler = function (name, definition) {
+        this[name] = definition;
       };
-      process_messages(self.functions, handler, definitions);
+      process_messages(unprivileged_function_definitions, handler, arguments);
+      update_functions();
+    },
+
+    add_privileged_functions: function () {
+      var handler = function (name, definition) {
+        this[name] = eval('('+definition+')');
+      }
+      process_messages(privileged_functions, handler, arguments);
+      update_functions();
     },
 
     call_functions: function () {
@@ -57,7 +77,7 @@
           timeout_handles.push(handle);
         },
         functions: function () {
-          process_messages(self.functions, self.functions, arguments);
+          process_messages(functions, self.functions, arguments);
         },
       };
       process_messages(this, handler, arguments);
@@ -78,23 +98,97 @@
     message_obj[name] = args;
     postMessage({respond: message_obj});
   };
-  
-  var names_to_make_globally_visible = [
+
+  var names_globally_visible_inside_worker = [
     'arguments_to_array',
-    'functions',
+    'unprivileged_function_definitions',
+    'privileged_functions',
+    'functions', // I had to make this globally visible anyway, for testing purposes.
     'handler',
     'onmessage',
-    'callout'
+    'callout',
+    'create_safe_scope',
+  ];
+
+  var taboo_names = [
+    'postMessage',
+    'onmessage',
+    'importScripts',
+    'self',
   ];
   
+  // Create a scope in which the unprivileged functions
+  // can only see what I want them to see.  Evaluate the definitions.
+  // Return the functions.
+  //
+  // The script to eval should look something like this:
+  //
+  //   (function (
+  //     privileged1, // these will be bound to the external definitions in the closure
+  //     privileged2,
+  //     unprivileged1, // these will be defined inside the closure
+  //     unprivileged2,
+  //     arguments_to_array, // these are left undefined
+  //     unprivileged_function_definitions,
+  //     privileged_functions,
+  //     functions,
+  //     ...,
+  //     postMessage, // as are these
+  //     onmessage,
+  //     importScripts,
+  //     self
+  //   ) {
+  //     privileged1 = this.privileged_functions.privileged1;
+  //     privileged2 = this.privileged_functions.privileged2;
+  //
+  //     unprivileged1 = function (args) { ... definition of function 1 ...};
+  //     unprivileged2 = function (args) { ... definition of function 2 ...};
+  //     
+  //     return {
+  //       privileged1: privileged1,
+  //       privileged2: privileged2,
+  //       unprivileged1: unprivileged1,
+  //       unprivileged2: unprivileged2,
+  //     };
+  //   })();
+  function create_safe_scope() {
+    var unprivileged_names = Object.keys(unprivileged_function_definitions);
+    var privileged_names = Object.keys(privileged_functions);
+    var banned_names = names_globally_visible_inside_worker.concat(taboo_names);
+    var arg_list = privileged_names.concat(unprivileged_names).concat(banned_names);
+    var arg_list = '  ' + arg_list.join(',\n  ') + '\n';
+    var privileged_definitions = '';
+    var unprivileged_definitions = '';
+    var functions = '';   
+    for (var i = 0; i < privileged_names.length; ++i) {
+      var name = privileged_names[i];
+      privileged_definitions += '  ' + name + ' = this.privileged_functions.' + name + ';\n';
+      functions += '    ' + name + ': ' + name + ',\n';
+    }
+    for (var i = 0; i < privileged_names.length; ++i) {
+      privileged_names[i] = '  privileged_functions.' + privileged_functions[i];
+    }
+    for (var i = 0; i < unprivileged_names.length; ++i) {
+      var name = unprivileged_names[i];
+      unprivileged_definitions += '  ' + name + ' = ' + unprivileged_function_definitions[name] + ';\n';
+      functions += '    ' + name + ': ' + name + ',\n';
+    };
+
+    return '' +
+      '(function (\n' + arg_list + ') {\n' +
+      privileged_definitions + '\n' +
+      unprivileged_definitions + '\n' +
+      '  return {\n' + functions + '  };\n' +
+      '})();'
+  }
+  
   function make_worker_definitions_globally_visible() {
-    var names = names_to_make_globally_visible;
+    var names = names_globally_visible_inside_worker;
     for (var i = 0; i < names.length; ++i) {
       var name = names[i];
       self[name] = eval(name);
     }
   }
-
 
   // The following lines are run only when the code
   // is executed in a worker context.
@@ -216,12 +310,11 @@
         // the default timeout.
         //
         // Record the function, so it can be rebooted later.
-        add_functions: function () {
-          var args = arguments_to_array(arguments);
-          var stringified_args = convert_functions_to_strings(args);
+        _add_functions: function (message_type, new_functions) {
+          var stringified_functions = convert_functions_to_strings(new_functions);
           this._post_message_and_record_for_reboot(
-            'add_functions',
-            stringified_args
+            message_type,
+            stringified_functions
           );
           var functions = this.functions;
           var timeout_modifying = this._timeout_modifying_functions;
@@ -246,7 +339,12 @@
               };
             }
           }
-          process_messages(this, register, arguments);
+          process_messages(this, register, new_functions);
+        },
+
+        add_functions: function () {
+          var new_functions = arguments_to_array(arguments);
+          this._add_functions('add_unprivileged_functions', new_functions);
         },
         
         _call_functions: function () {
@@ -307,7 +405,7 @@
               'function () {callout("' + name + '", arguments);}';
             var message = {};
             message[name] = definition;
-            this.add_functions(message);
+            this._add_functions('add_privileged_functions', message);
           }
           process_messages(this, register, arguments);
         },
