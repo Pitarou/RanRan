@@ -8,6 +8,9 @@ the source code in a [web worker][] sandbox.
 
 The editor itself is a YUI wrapper for the [Ace][] editor, but RanRan extends this
 by presenting the editor in a YUI Panel which can be dragged, resized, and so on.
+There is also a Read Eval Print Loop panel.
+
+The editor and the Web Worker aren't quite integrated yet, but that's the next step.
 
 This work will be presented as part of the final project for an MSc in
 e-Learning Technology.
