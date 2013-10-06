@@ -23,19 +23,20 @@
   
   var unprivileged_function_definitions = {};
   var privileged_functions = {};
+  // Define this at global scope to facilitate testing.
   functions = {};
+  var timeout_handles = [];
 
   function update_functions() {
-    try {
-      var new_functions = eval(create_safe_scope());
-    }
-    catch (e) {
-      console.log('failed');
-      console.log(create_safe_scope());
-    }
+    var new_functions = eval(create_sandboxed_scope());
     functions = new_functions;
   }
 
+
+  function clear_timeout_handles () {
+    postMessage({clear_timeout_handles: timeout_handles});
+    timeout_handles = [];
+  }
 
 
   var handler = {
@@ -71,7 +72,6 @@
     },
 
     call_functions: function () {
-      var timeout_handles = [];
       var handler = {
         timeout_handle: function (handle) {
           timeout_handles.push(handle);
@@ -81,13 +81,17 @@
         },
       };
       process_messages(this, handler, arguments);
-      postMessage({clear_timeout_handles: timeout_handles});
+      clear_timeout_handles();
     },
   };
   
   function onmessage(event) {
-    var message = event.data;
-    process_messages(this, handler, message);
+    try {
+      var message = event.data;
+      process_messages(this, handler, message);
+    } catch (e) {
+      onexception(e);
+    }
   };
   
   function callout(name, args) {
@@ -99,15 +103,30 @@
     postMessage({respond: message_obj});
   };
 
+  function onexception(e) {
+    var exception_object = {};
+    if (e.name) {
+      exception_object.name = e.name;
+    }
+    if (e.message) {
+      exception_object.message = e.message;
+    }
+    if (typeof(e) === 'string') {
+      exception_object.message = e;
+    }
+    clear_timeout_handles();
+    postMessage({exception: exception_object});
+  };
+
   var names_globally_visible_inside_worker = [
     'arguments_to_array',
     'unprivileged_function_definitions',
     'privileged_functions',
-    'functions', // I had to make this globally visible anyway, for testing purposes.
+    'functions',
     'handler',
     'onmessage',
     'callout',
-    'create_safe_scope',
+    'create_sandboxed_scope',
   ];
 
   var taboo_names = [
@@ -151,7 +170,7 @@
   //       unprivileged2: unprivileged2,
   //     };
   //   })();
-  function create_safe_scope() {
+  function create_sandboxed_scope() {
     var unprivileged_names = Object.keys(unprivileged_function_definitions);
     var privileged_names = Object.keys(privileged_functions);
     var banned_names = names_globally_visible_inside_worker.concat(taboo_names);
@@ -430,6 +449,11 @@
               process_messages(this, this._responders, arguments);
             },
           },
+          {
+            exception: function (e) {
+              this.get('exceptionHandler')(e);
+            },
+          },
         ],
 
         _bind_onmessage: function () {
@@ -465,6 +489,18 @@
           make_worker_definitions_globally_visible();
           this._worker = worker;
         },
+
+        _default_exception_handler: function (e) {
+          if (e.name && e.message && this[e.name]) {
+            throw new this[e.name](e.message);
+          } else if (e.name && e.message) {
+            throw new Error(e.name + ': ' + e.message)
+          } else if (e.name || e.message) {
+            throw new Error(e.name || e.message);
+          } else {
+            throw new Error(e.toString());
+          }
+        },
       }, {
         NAME: WORKER,
         ATTRS: {
@@ -482,6 +518,9 @@
           },
           customTimeoutHandler: {
             value: false,
+          },
+          exceptionHandler: {
+            valueFn: function () {return this._default_exception_handler},
           },
         },
       });
