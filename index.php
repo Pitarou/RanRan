@@ -11,7 +11,6 @@ require_once('config.php');
     <h1>Integrating Ace Editor into YUI3</h1>
     <h2>Next steps</h2>
 	<ul>
-    <li>Add a REPL panel</li>
 	  <li>Integrate Web Workers</li>
 	  <li>Improve Flexbox compatibility for older browsers</li>
 	</ul>
@@ -119,7 +118,7 @@ console.log(bf('++++++++++[>+++++++>++++++++++>+++>+<<<<-]>++.>+.+++++++..+++.>+
 	     worker = new Y.RanRan.Worker();
        Y.use('test-console', function (Y) {
          new Y.Test.Console().render();
-         //Y.Test.Runner.run();
+         Y.Test.Runner.run();
          window.Y = Y;
        });
 	  });

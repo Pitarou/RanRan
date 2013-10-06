@@ -121,9 +121,15 @@
     // deep copy an object, converting functions to strings
     // Arrays are copied elementwise
     // Objects' own properties are copied elementwise
+    //
+    // If the function was defined like this:
+    // 
+    //   function isEven(x) {return x%2 === 0}
+    //
+    // then remove the 'isEven' bit from the string. 
     function convert_functions_to_strings(object) {
       if (typeof(object) === 'function') {
-        return object.toString();
+        return object.toString().replace(/^\s*function\s+\w+\s*\(/, 'function (');
       } else if (object instanceof Array) {
         var length = object.length;
         var converted = new Array(length);
@@ -205,8 +211,8 @@
         // Add a method to this.functions that passes
         // a message to the Web Worker to call that function.
         // 
-        // Add a method to this.timeout_modifying that calls
-        // passes the method in with timeout other than
+        // Add a method to this.timeout_modifying that passes
+        // the method in with timeout other than
         // the default timeout.
         //
         // Record the function, so it can be rebooted later.
@@ -250,10 +256,12 @@
             this.get('defaultTimeoutPeriod')
           );
         },
+
         _default_timeout_handler: function () {
           this.reboot();
           this.fire('timeout');
         },
+
         _call_functions_with_timeout_period: function (functions, timeout_period) {
           var sT = this.get('mockSetTimeout') || setTimeout;
           var timeout_handler = this.get('customTimeoutHandler') ||
@@ -268,6 +276,7 @@
             }
           );
         },
+        
         with_timeout_period: function(timeoutPeriod) {
           function TimeoutPeriodModifier () {
             this.timeoutPeriod = timeoutPeriod;
@@ -275,9 +284,11 @@
           TimeoutPeriodModifier.prototype = this._timeout_modifying_functions;
           return new TimeoutPeriodModifier();
         },
+
         eval_and_assign_globals: function () {
           this._post_message_and_record_for_reboot('eval_and_assign_globals', arguments_to_array(arguments));
         },
+
         add_handlers: function() {
           this._post_message_and_record_for_reboot('add_handlers', arguments_to_array(arguments));
           function register(name) {
@@ -321,10 +332,12 @@
               process_messages(this, this._responders, arguments);
             },
           },
-        ],        
+        ],
+
         _bind_onmessage: function () {
           this._worker.onmessage = Y.bind(this._onmessage, this);
         },
+
         _onmessage: function(event) {
           var message = event.data;
           process_messages(this, this._handler, message);

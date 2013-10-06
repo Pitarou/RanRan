@@ -297,6 +297,17 @@
           worker.functions.shout(21);
           Y.Assert.areSame('21', str, 'function callout roundtrip with simulate worker succeeded');
         },
+
+        testFunctionsCalloutsAlternativeSyntax: function () {
+          var worker = this.worker;
+          var str = '';
+          function echo(arg) {str += arg;};
+          function shout(arg) {this.echo(arg);};
+          worker.add_callout_functions({echo: echo});
+          worker.add_functions({shout: shout});
+          worker.functions.shout(49);
+          Y.Assert.areSame('49', str, 'function callout roundtrip with sumulated worker using alternative syntax for function definition');
+        },
         
         testRealFunctionsCallCalloutsRoundTrip: function() {
           var worker = this.real_worker;
