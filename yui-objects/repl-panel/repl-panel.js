@@ -12,7 +12,7 @@ YUI.add(
 
       bindUI: function () {
         Y.RanRan.CollapsibleParentPanel.prototype.bindUI.apply(this, arguments);
-        this._editor.on('changed', Y.bind(this._on_editor_changed, this));
+        this._editor.on('edited', Y.bind(this._on_editor_edited, this));
       },
 
       syncUI: function () {
@@ -50,7 +50,7 @@ YUI.add(
       _sync_editor: function () {
         var text = this._history_item.text;
         if (text === false) {
-          text = this.current;
+          text = this._current;
         }
         this._editor.suppressChangedEvent()
                     .setValue(text)
@@ -101,7 +101,7 @@ YUI.add(
         this._sync_editor()
       },
 
-      _on_editor_changed: function () {
+      _on_editor_edited: function () {
         this._history_to_current();
         this._current = this._editor.getValue();
       },
