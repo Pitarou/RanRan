@@ -95,21 +95,13 @@ YUI.add(
               this._evaluator_continuations['result'](result);
             }
           } catch (e) {
-            this._evaluator_continuations['error'](e);
+            this._evaluator_continuations['exception'](e);
           }
         }
       },
 
       _set_worker_evaluator: function () {
         var worker = this.get('worker');
-        worker.on(
-          'worker:timeout',
-          this._evaluator_continuations['timeout']
-        );
-        worker.set(
-          'exceptionHandler',
-          this._evaluator_continuations['error']
-        );
         var result_handler = Y.bind(
           function (e) {
             var result = e.result;
@@ -122,7 +114,11 @@ YUI.add(
           },
           this
         );
-        worker.on('worker:evalResult', result_handler);
+        worker.on({
+          'worker:evalResult': result_handler,
+          'worker:timeout': this._evaluator_continuations['timeout'],
+          'worker:exception': this._evaluator_continuations['exception'],
+        });
         this._evaluator = function (line) {
           worker.eval(line);
         }
@@ -150,8 +146,11 @@ YUI.add(
             },
             this
           ),
-          'error': Y.bind(
+          'exception': Y.bind(
             function (e) {
+              if (e.message_type !== 'eval') {
+                return;
+              }
               this._add_repl_line(
                 [REPL_RESPONSE_CLASS, REPL_ERROR_CLASS],
                 Y.Escape.html(e.message)

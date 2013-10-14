@@ -114,11 +114,24 @@
       postMessage({eval_results: results});
     },
   };
+
+  function check_for_bad_messages(message_type) {
+    if (!handler.hasOwnProperty(message_type)) {
+      throw new TypeError("Y.RanRan.Worker: no message handler for: '" + message_type + "'");
+    }
+  }
+
+  var last_message_type = 'initialization';
+
+  var message_handling_pipeline = [
+    function (message_type) {last_message_type = message_type},
+    check_for_bad_messages,
+    handler,
+  ];
   
   function onmessage(event) {
     try {
-      var message = event.data;
-      process_messages(this, handler, message);
+      process_messages(this, message_handling_pipeline, event.data);
     } catch (e) {
       onexception(e);
     }
@@ -144,6 +157,7 @@
     if (typeof(e) === 'string') {
       exception_object.message = e;
     }
+    exception_object.message_type = last_message_type;
     clear_timeout_handles();
     postMessage({exception: exception_object});
   };
@@ -507,7 +521,7 @@
           },
           {
             exception: function (e) {
-              this.get('exceptionHandler')(e);
+              this.fire('exception', e);
             },
           },
         ],

@@ -9,7 +9,6 @@
     <h1>Javascript REPL and code editor using web workers</h1>
     <h2>Next on my todo list:</h2>
 	<ul>
-    <li>Change worker to handle errors as an event, and add a mechanism so that different handlers can handle different errors (e.g. compilation, REPL, and 'runtime')</li>
     <li>Plug the code editor panel into the web worker</li>
 	  <li>Fix focus management</li>
 	  <li>Improve Flexbox compatibility for older browsers</li>
@@ -122,7 +121,7 @@ console.log(bf('++++++++++[>+++++++>++++++++++>+++>+<<<<-]>++.>+.+++++++..+++.>+
 	     worker = new Y.RanRan.Worker();
        Y.use('test-console', function (Y) {
          new Y.Test.Console().render();
-         //Y.Test.Runner.run();
+         Y.Test.Runner.run();
          window.Y = Y;
        });
 	  });

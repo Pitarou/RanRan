@@ -13,12 +13,6 @@
           this.real_worker = new Y.RanRan.Worker();
         },
         
-        _should: {
-          error: {
-            testPostBadMessage: true,
-          },
-        },
-        
         testCreate: function () {
           Y.Assert.isObject(this.worker, 'worker created');
           Y.Assert.isObject(this.real_worker, 'real worker created');
@@ -157,7 +151,23 @@
         },
         
         testPostBadMessage: function () {
+          var worker = this.worker;
+          worker.after('worker:exception', function (e) {
+            Y.Assert.areSame('bad_message', e.message_type);
+          });
           this.worker._post_message('bad_message', []);
+        },
+
+        testPostBadMessageRealWorker: function () {
+          var worker = this.real_worker;
+          var test = this;
+          worker.after('worker:exception', function (e) {
+            test.resume(function () {
+              Y.Assert.areSame('bad_message', e.message_type);
+            });
+          });
+          worker._post_message('bad_message', []);
+          test.wait(200);
         },
         
         testPostEvalAndAssignGlobalsMessage: function () {
