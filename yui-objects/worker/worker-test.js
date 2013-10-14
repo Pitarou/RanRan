@@ -495,6 +495,34 @@
           worker.eval('test_callout(double(21))');
           test.wait(200);
         },
+
+        testWorkerUnprivilegedFunctionAddedSignal: function () {
+          var worker = this.worker;
+          var function_name;
+          var privileged
+          worker.on('worker:functionAdded', function (e) {
+            function_name = e.function_name;
+            privileged = e.privileged;
+          });
+          worker.add_functions({some_name: function () {}});
+          Y.Assert.areSame('some_name', function_name, 'functionAdded signal raised and reports name of function');   
+          Y.Assert.isFalse(privileged, 'functionAdded signal reports privilege');
+        },
+
+
+        testRealWorkerPrivilegedFunctionAddedSignal: function () {
+          var worker = this.real_worker;
+          var test = this;
+          worker.on('worker:functionAdded', function (e) {
+            test.resume(function () {
+              Y.Assert.areSame('some_name', e.function_name, 'functionAdded signal raised and reports name of function for real worker');
+              Y.Assert.isTrue(e.privileged, 'functionAdded signal reports privilege');
+            });
+          });
+          worker.add_callout_functions({some_name: function () {}});
+          test.wait(200);
+        },
+
       }));
     
       Y.Test.Runner.add(worker_suite);

@@ -39,13 +39,18 @@ YUI.add('editor-panel', function (Y) {
      
     _compile: function() {
       var code = this._getCode();
-      try {
-        var compiled = eval(code);
-      } catch (e) {
-        Y.log(e, 'warn', 'compile');
-        return;
+      var worker = this.get('worker');
+      if (false) {
+        
+      } else {
+        try {
+          var compiled = eval(code);
+        } catch (e) {
+          Y.log(e, 'warn', 'compile');
+          return;
+        }
+        this._compiled = compiled;
       }
-       this._compiled = compiled;
 	   this.set('compiled', true);
     },
     
@@ -78,6 +83,7 @@ YUI.add('editor-panel', function (Y) {
     // static properties
     ATTRS : {
 	    compiled: false,
+      worker: false,
       defaultChildType: {value: Y.RanRan.AceEditor,},
 		  buttons: {valueFn: function () {return [
 		    {

@@ -67,6 +67,7 @@
     add_unprivileged_functions: function () {
       var handler = function (name, definition) {
         this[name] = definition;
+        postMessage({function_added: {function_name: name, privileged: false}});
       };
       process_messages(unprivileged_function_definitions, handler, arguments);
       update_functions();
@@ -75,6 +76,7 @@
     add_privileged_functions: function () {
       var handler = function (name, definition) {
         this[name] = eval('('+definition+')');
+        postMessage({function_added: {function_name: name, privileged: true}});
       }
       process_messages(privileged_functions, handler, arguments);
       update_functions();
@@ -523,6 +525,11 @@
             exception: function (e) {
               this.fire('exception', e);
             },
+          },
+          {
+            function_added: function (e) {
+              this.fire('functionAdded', e);
+            }
           },
         ],
 

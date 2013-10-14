@@ -100,14 +100,6 @@ console.log(bf('++++++++++[>+++++++>++++++++++>+++>+<<<<-]>++.>+.+++++++..+++.>+
      // For some weird reason, I can't just make a single '.use' call.  I have to stage the loading.
      YUI().use('ranran-base', 'console').use('node', 'dd-plugin', 'yui-ace-editor').use('editor-panel', 'worker', 'worker-test', 'message-processor-test', 'collapsible-parent-panel', 'history-manager', 'history-manager-test', 'repl-panel', 'panel-manager', 'panel-manager-test', function(Y) {
 
-	     panel = new Y.RanRan.EditorPanel({
-	       srcNode: '#editor-panel',
-	       render: true,
-	       collapsed: false,
-         x: 400,
-         y: 200,
-	     });
-
        repl_panel = new Y.RanRan.REPLPanel({
          srcNode: '#collapsible-panel',
          render: true,
@@ -115,6 +107,15 @@ console.log(bf('++++++++++[>+++++++>++++++++++>+++>+<<<<-]>++.>+.+++++++..+++.>+
          worker: new Y.RanRan.Worker(),
          y: 50,
        });
+
+	     panel = new Y.RanRan.EditorPanel({
+	       srcNode: '#editor-panel',
+	       render: true,
+	       collapsed: false,
+         x: 400,
+         y: 200,
+         worker: repl_panel.get('worker'),
+	     });
 
        repl_panel.manager.create().add(panel);
 
