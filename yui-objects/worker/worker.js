@@ -560,17 +560,6 @@
           this._worker = worker;
         },
 
-        _default_exception_handler: function (e) {
-          if (e.name && e.message && this[e.name]) {
-            throw new this[e.name](e.message);
-          } else if (e.name && e.message) {
-            throw new Error(e.name + ': ' + e.message)
-          } else if (e.name || e.message) {
-            throw new Error(e.name || e.message);
-          } else {
-            throw new Error(e.toString());
-          }
-        },
       }, {
         NAME: WORKER,
         ATTRS: {
