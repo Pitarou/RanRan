@@ -151,6 +151,7 @@
     'yui-ace-editor',
     'collapsible-parent-panel',
     'history-manager',
+    'escape',
   ]);
   add_module_group('managed-panel', ['widget-stack', 'panel-manager']);
   add_module_group('panel-manager', [], false, true);

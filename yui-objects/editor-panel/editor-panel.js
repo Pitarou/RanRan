@@ -3,7 +3,6 @@ YUI.add('editor-panel', function (Y) {
   var DEFAULT_MIN_WIDTH = Y.RanRan.Config.DEFAULT_MIN_WIDTH;
   var DEFAULT_WIDTH = Y.RanRan.Config.DEFAULT_WIDTH;
   var INITIAL_HEIGHT = Y.RanRan.Config.DEFAULT_INITIAL_HEIGHT;
-  var COLLAPSE_BUTTON_CLASSNAME = Y.ClassNameManager.getClassName(EDITORPANEL, 'button', 'collapse');
   
   Y.RanRan.EditorPanel = Y.Base.create(EDITORPANEL, Y.RanRan.CollapsibleParentPanel, [], {
   
@@ -86,7 +85,7 @@ YUI.add('editor-panel', function (Y) {
 			    value: 'Collapse',
 			    section: Y.WidgetStdMod.HEADER,
 			    action: Y.bind(this._toggle_collapsed, this),
-			    classNames: [COLLAPSE_BUTTON_CLASSNAME],
+			    classNames: [Y.RanRan.CollapsibleParentPanel.COLLAPSE_BUTTON_CLASSNAME],
 		    },
 		    {
 			  name: 'compile',

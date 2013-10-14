@@ -1,17 +1,17 @@
-<?php
-require_once('config.php');
-?>
+<?php require_once('config.php'); ?>
 
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Integrating Ace Editor into YUI3</title>
+    <title>Javascript REPL and code editor using web workers</title>
   </head>
   <body class="yui3-skin-sam">
-    <h1>Integrating Ace Editor into YUI3</h1>
-    <h2>Next steps</h2>
+    <h1>Javascript REPL and code editor using web workers</h1>
+    <h2>Next on my todo list:</h2>
 	<ul>
-	  <li>Integrate Web Workers</li>
+    <li>Change worker to handle errors as an event, and add a mechanism so that different handlers can handle different errors (e.g. compilation, REPL, and 'runtime')</li>
+    <li>Plug the code editor panel into the web worker</li>
+	  <li>Fix focus management</li>
 	  <li>Improve Flexbox compatibility for older browsers</li>
 	</ul>
   <div id="console"></div>
@@ -98,19 +98,23 @@ console.log(bf('++++++++++[>+++++++>++++++++++>+++>+<<<<-]>++.>+.+++++++..+++.>+
 
     <script type="text/javascript">
     
-     // For some weird reason, I have to stage the loading in this sequence or ace-editor breaks.	 
+     // For some weird reason, I can't just make a single '.use' call.  I have to stage the loading.
      YUI().use('ranran-base', 'console').use('node', 'dd-plugin', 'yui-ace-editor').use('editor-panel', 'worker', 'worker-test', 'message-processor-test', 'collapsible-parent-panel', 'history-manager', 'history-manager-test', 'repl-panel', 'panel-manager', 'panel-manager-test', function(Y) {
 
 	     panel = new Y.RanRan.EditorPanel({
 	       srcNode: '#editor-panel',
 	       render: true,
-	       collapsed: true,
+	       collapsed: false,
+         x: 400,
+         y: 200,
 	     });
 
        repl_panel = new Y.RanRan.REPLPanel({
          srcNode: '#collapsible-panel',
          render: true,
-         collapsed: true,
+         collapsed: false,
+         worker: new Y.RanRan.Worker(),
+         y: 50,
        });
 
        repl_panel.manager.create().add(panel);
@@ -118,7 +122,7 @@ console.log(bf('++++++++++[>+++++++>++++++++++>+++>+<<<<-]>++.>+.+++++++..+++.>+
 	     worker = new Y.RanRan.Worker();
        Y.use('test-console', function (Y) {
          new Y.Test.Console().render();
-         Y.Test.Runner.run();
+         //Y.Test.Runner.run();
          window.Y = Y;
        });
 	  });

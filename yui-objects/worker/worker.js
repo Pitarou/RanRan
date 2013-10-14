@@ -25,13 +25,22 @@
   var privileged_functions = {};
   // Define this at global scope to facilitate testing.
   functions = {};
+  var eval_closure = undefined;
   var timeout_handles = [];
 
   function update_functions() {
-    var new_functions = eval(create_sandboxed_scope());
-    functions = new_functions;
+    var closure = create_sandboxed_scope();
+    functions = closure.functions;
+    eval_closure = closure.eval;
   }
 
+  function eval_and_return_results(code) {
+    return eval_closure(code);
+  }
+
+  function add_timeout_handle(handle) {
+    timeout_handles.push(handle);
+  }
 
   function clear_timeout_handles () {
     postMessage({clear_timeout_handles: timeout_handles});
@@ -72,16 +81,37 @@
     },
 
     call_functions: function () {
-      var handler = {
-        timeout_handle: function (handle) {
-          timeout_handles.push(handle);
+      var handler = [
+        {
+          timeout_handle: add_timeout_handle,
         },
-        functions: function () {
-          process_messages(functions, self.functions, arguments);
+        {
+          functions: 
+            function () {
+              process_messages(functions, self.functions, arguments);
+            },
         },
-      };
+      ];
       process_messages(this, handler, arguments);
       clear_timeout_handles();
+    },
+    
+    eval: function () {
+      var results = [];
+      var handler = [
+        {
+          timeout_handle: add_timeout_handle,
+        },
+        {
+          code: function (code) {
+            var result = eval_and_return_results(code);
+            results.push(result);
+          },
+        },
+      ];
+      process_messages(this, handler, arguments);
+      clear_timeout_handles();
+      postMessage({eval_results: results});
     },
   };
   
@@ -134,6 +164,7 @@
     'onmessage',
     'importScripts',
     'self',
+    'arguments',
   ];
   
   // Create a scope in which the unprivileged functions
@@ -164,10 +195,15 @@
   //     unprivileged2 = function (args) { ... definition of function 2 ...};
   //     
   //     return {
-  //       privileged1: privileged1,
-  //       privileged2: privileged2,
-  //       unprivileged1: unprivileged1,
-  //       unprivileged2: unprivileged2,
+  //       functions: {
+  //         privileged1: privileged1,
+  //         privileged2: privileged2,
+  //         unprivileged1: unprivileged1,
+  //         unprivileged2: unprivileged2,
+  //       },
+  //       eval: function () {
+  //         return eval(arguments[0]);
+  //       },
   //     };
   //   })();
   function create_sandboxed_scope() {
@@ -182,7 +218,7 @@
     for (var i = 0; i < privileged_names.length; ++i) {
       var name = privileged_names[i];
       privileged_definitions += '  ' + name + ' = this.privileged_functions.' + name + ';\n';
-      functions += '    ' + name + ': ' + name + ',\n';
+      functions += '      ' + name + ': ' + name + ',\n';
     }
     for (var i = 0; i < privileged_names.length; ++i) {
       privileged_names[i] = '  privileged_functions.' + privileged_functions[i];
@@ -190,15 +226,22 @@
     for (var i = 0; i < unprivileged_names.length; ++i) {
       var name = unprivileged_names[i];
       unprivileged_definitions += '  ' + name + ' = ' + unprivileged_function_definitions[name] + ';\n';
-      functions += '    ' + name + ': ' + name + ',\n';
+      functions += '      ' + name + ': ' + name + ',\n';
     };
 
-    return '' +
+    var code = 
       '(function (\n' + arg_list + ') {\n' +
       privileged_definitions + '\n' +
       unprivileged_definitions + '\n' +
-      '  return {\n' + functions + '  };\n' +
-      '})();'
+      '  return {\n' +
+      '    functions: {\n' +
+      functions + '    },\n' +
+      '    eval: function () {\n' +
+      '      return eval(arguments[0]);\n' +
+      '    },\n' +
+      '  };\n' +
+      '})();';
+    return eval(code);
   }
   
   function make_worker_definitions_globally_visible() {
@@ -215,6 +258,7 @@
   if (typeof(window) === 'undefined' && typeof(global) === 'undefined') {
     importScripts('../message-processor/message-processor.js');
     make_worker_definitions_globally_visible();
+    update_functions();
   } else {
 
   // The rest of the code is run in the context that created
@@ -379,19 +423,19 @@
           this.fire('timeout');
         },
 
-        _call_functions_with_timeout_period: function (functions, timeout_period) {
-          var sT = this.get('mockSetTimeout') || setTimeout;
+        _timeout_message: function(timeout_period) {
+          var sT = this.get('_mockSetTimeout') || setTimeout;
           var timeout_handler = this.get('customTimeoutHandler') ||
                                 Y.bind(this._default_timeout_handler, this);
           var timeout_handle = sT(timeout_handler, timeout_period);
           this._timeout_handles[timeout_handle] = true;
-          this._post_message(
-            'call_functions',
-            {
-              timeout_handle: timeout_handle,
-              functions: functions,
-            }
-          );
+          return {timeout_handle: timeout_handle};
+        },
+
+        _call_functions_with_timeout_period: function (functions, timeout_period) {
+          var message_content = this._timeout_message(timeout_period);
+          message_content.functions = functions;
+          this._post_message('call_functions', message_content);
         },
         
         with_timeout_period: function(timeoutPeriod) {
@@ -428,6 +472,13 @@
           }
           process_messages(this, register, arguments);
         },
+
+        eval: function (code, timeout_period) {
+          timeout_period = timeout_period || this.get('defaultTimeoutPeriod');
+          var message_content = this._timeout_message(timeout_period);
+          message_content.code = code;
+          this._post_message('eval', message_content);
+        },
         
         _create_real_worker: function () {
           var path = this.get('workerDefinitionPath');
@@ -442,6 +493,11 @@
                 clearTimeout(handle);
                 delete this._timeout_handles[handle];
               }
+            },
+          },
+          {
+            eval_results: function (result) {
+              this.fire('evalResult', {result: result});
             },
           },
           {
@@ -508,9 +564,6 @@
             value: get_path_for_this_file(),
           },
           simulated: {
-            value: false,
-          },
-          mockSetTimeout: {
             value: false,
           },
           defaultTimeoutPeriod: {

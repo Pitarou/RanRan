@@ -1,0 +1,33 @@
+.yui3-replpanel-repl {
+  font-family: monospace;
+  font-size: 12;
+}
+
+.yui3-replpanel-repl-input {
+  font-style: italic;
+  color: GoldenRod; /* By the way, what IS a "golden rod"? */
+  background-color: WhiteSmoke;
+}
+
+.yui3-replpanel-repl-response {
+}
+
+.yui3-replpanel-repl-response-ok {
+  color: brown;
+}
+
+.yui3-replpanel-repl-response-error {
+  font-style: italic;
+  color: red;
+}
+
+.yui3-replpanel-repl-response-timeout {
+  font-style: italic;
+  font-weight: bold;
+  color: red;
+}
+
+.yui3-replpanel-repl-response-undefined {
+  color: lightgray;
+  font-style: italic;
+}

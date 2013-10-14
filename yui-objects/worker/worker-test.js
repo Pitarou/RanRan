@@ -360,13 +360,13 @@
             rememberedTimeoutPeriod = timeoutPeriod;
             return ++timeoutIDCounter;
           };
-          worker.set('mockSetTimeout', mockSetTimeout);
+          worker.set('_mockSetTimeout', mockSetTimeout);
           worker.add_functions({inert: function () {}});
           worker.with_timeout_period(42).inert();
           Y.Assert.areSame(42, rememberedTimeoutPeriod, 'with_timeout_period sets timeout appropriately');
           worker.functions.inert();
           Y.Assert.areSame(100, rememberedTimeoutPeriod, 'functions retains default timeout period');
-          worker.set('mockSetTimeout', false);
+          worker.set('_mockSetTimeout', false);
         },
 
         testCustomTimeoutHandlerCalledOnTimeout: function () {
@@ -423,7 +423,68 @@
           worker.functions.foo();
           test.wait(200);
         },
-        
+
+        testEvalRuns: function () {
+          var worker = this.worker;
+          __str = ''; // global
+          worker.eval('__str = "passed"');
+          Y.Assert.areEqual('passed', __str, 'eval in simulated worker');
+          delete __str;
+        },
+
+        testRealEvalTimesOut: function () {
+          var worker = this.real_worker;
+          var test = this;
+          worker.on('worker:timeout', function () {
+            test.resume(function () {
+              Y.Assert.pass('eval timed out');
+            });
+          });
+          worker.eval('while(1);');
+          test.wait(200);
+        },
+
+        testEvalReturnsResult: function () {
+          var worker = this.worker;
+          var result;
+          worker.on('evalResult', function (e) {
+            result = e.result;
+          });
+          worker.eval('10 * 10');
+          Y.Assert.areSame(100, result, 'simulated worker evals and returns result');
+        },
+
+        testRealEvalReturnsResult: function () {
+          var worker = this.real_worker;
+          var test = this;
+          worker.on('evalResult', function (e) {
+            var result = e.result;
+            test.resume(function () {
+              Y.Assert.areEqual(
+                2,
+                result,
+                'eval evaluates its result and passes it out in a message'
+              );
+            });
+          });
+          worker.eval('1 + 1;');
+          test.wait(200);
+        },
+
+        testRealEvalWorksWithFunctionsAndCallouts: function () {
+          var worker = this.real_worker;
+          var test = this;
+          worker.add_callout_functions({
+            test_callout: function (result) {
+              test.resume(function () {
+                Y.Assert.areSame(42, result, 'eval calls a function which calls a callout');
+              });
+            },
+          });
+          worker.add_functions({double: function (x) {return x*2;}});
+          worker.eval('test_callout(double(21))');
+          test.wait(200);
+        },
       }));
     
       Y.Test.Runner.add(worker_suite);

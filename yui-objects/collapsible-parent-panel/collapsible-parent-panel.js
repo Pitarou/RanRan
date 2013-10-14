@@ -200,6 +200,8 @@ YUI.add('collapsible-parent-panel', function (Y) {
       
     },
     {
+      COLLAPSE_BUTTON_CLASSNAME: COLLAPSE_BUTTON_CLASSNAME,
+
       ATTRS: {
         minWidth: {
           value: 200,
