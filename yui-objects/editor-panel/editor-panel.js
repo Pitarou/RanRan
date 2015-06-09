@@ -14,34 +14,47 @@ YUI.add('editor-panel', function (Y) {
         child.after('edited', Y.bind(me._afterChildEdited, me));
       });
       this.on('edited', Y.bind(this._onEdited, this));
+      this.after('compilableChange', Y.bind(this._afterCompilableChange, this));
+      this.each(Y.bind(
+        function (child) {
+          child.on('changeAnnotation', Y.bind(this._on_changeAnnotation, this, child));
+        },
+        this
+      ));
     },
 
     syncUI: function () {
       Y.RanRan.CollapsibleParentPanel.prototype.syncUI.apply(this, arguments);
+      var focused;
       this.each(Y.bind(function (child) {
         if (child.get('focused')) {
           this.set('focusedElement', child);
         }
       }, this));
+      this._on_changeAnnotation();
     },
     
     _getChildrenFromMarkup: function () {
       return this.get('contentBox').all('.yui3-widget-bd .yui3-aceEditor');
     },
+
+    _getCodeBlocks: function () {
+      var blocks = [];
+      this.each(function (child) {blocks.push(child.getValue())});
+      return blocks;
+    },
      
     _getCode: function() {
-      var code = '';
-      this.each(function (child) {
-        code += child.getValue()
-      });
-      return code;
+      return this._getCodeBlocks().join('\n');
     },
      
     _compile: function() {
       var code = this._getCode();
       var worker = this.get('worker');
-      if (false) {
-        
+      if (worker) {
+        var function_definition = {};
+        function_definition[this.get('title')] = code;
+        worker.add_functions(function_definition);
       } else {
         try {
           var compiled = eval(code);
@@ -63,12 +76,7 @@ YUI.add('editor-panel', function (Y) {
     },
     
 	_after_compiledChange: function() {
-	  var compiled = this.get('compiled');
-	  this.getButton('compile').set('disabled', compiled);
-	  var run = this.getButton('run');
-	  if (run) {
-	    run.set('disabled', !compiled);
-	  }
+    this._set_compile_button_active_status();
 	},
 	
 	_afterChildEdited : function() {
@@ -78,13 +86,46 @@ YUI.add('editor-panel', function (Y) {
 	_onEdited : function () {
 	  this.set('compiled', false);
 	},
-	
+
+  _get_annotations_of_editable_sections: function () {
+    var annotations = [];
+    this.each(function (child) {
+      if (!child.get('readOnly')) {
+        annotations = annotations.concat(child._session.getAnnotations());
+      }
+    });
+    return annotations;
+  },
+
+  _on_changeAnnotation: function () {
+    var annotations = this._get_annotations_of_editable_sections();
+    var error = false;
+    for (var i = 0; i < annotations.length; ++i) {
+      if (annotations[i].type === 'error') {
+        error = true;
+        break;
+      }
+    }
+    this.set('compilable', !error);
+  },
+
+  _set_compile_button_active_status: function () {
+    var button = this.getButton('compile');
+    button.set('disabled', this.get('compiled') || !this.get('compilable'));
+  },
+      
+  _afterCompilableChange: function () {
+    this._set_compile_button_active_status();
+  },
+
   }, {
     // static properties
     ATTRS : {
 	    compiled: false,
+      compilable: true,
       worker: false,
       defaultChildType: {value: Y.RanRan.AceEditor,},
+      functionName: {value: 'run',},
 		  buttons: {valueFn: function () {return [
 		    {
 			    name: 'collapse',

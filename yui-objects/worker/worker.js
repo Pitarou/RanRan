@@ -25,17 +25,18 @@
   var privileged_functions = {};
   // Define this at global scope to facilitate testing.
   functions = {};
-  var eval_closure = undefined;
+  var repl = undefined;
   var timeout_handles = [];
 
   function update_functions() {
     var closure = create_sandboxed_scope();
     functions = closure.functions;
-    eval_closure = closure.eval;
+    repl = closure.repl;
   }
 
   function eval_and_return_results(code) {
-    return eval_closure(code);
+    repl = repl.then(code);
+    return repl.result;
   }
 
   function add_timeout_handle(handle) {
@@ -202,7 +203,7 @@
   //     postMessage, // as are these
   //     onmessage,
   //     importScripts,
-  //     self
+  //     self,
   //   ) {
   //     privileged1 = this.privileged_functions.privileged1;
   //     privileged2 = this.privileged_functions.privileged2;
@@ -217,9 +218,17 @@
   //         unprivileged1: unprivileged1,
   //         unprivileged2: unprivileged2,
   //       },
-  //       eval: function () {
-  //         return eval(arguments[0]);
-  //       },
+  //       repl: (function () {
+  //         return {
+  //           result: undefined,
+  //           then: function (expression) {
+  //             return {
+  //               result: eval(expression),
+  //               then: eval('(' +this.then+ ')'),
+  //             };
+  //           },
+  //         };
+  //       }).call({}),
   //     };
   //   })();
   function create_sandboxed_scope() {
@@ -244,6 +253,31 @@
       unprivileged_definitions += '  ' + name + ' = ' + unprivileged_function_definitions[name] + ';\n';
       functions += '      ' + name + ': ' + name + ',\n';
     };
+    
+    // Many thanks to bfavaretto for coming up with the idea behind this ingeniously ugly hack.
+    // http://stackoverflow.com/questions/19416447/why-can-i-only-declare-variables-in-the-first-instance-of-a-chain-of-nested-clos
+    //
+    // It can be used something like this:
+    //
+    //   make_repl().then('var x = 1').then('var y = 1').then('x + y').result
+    //
+    // which will return 3 without binding 'x' and 'y' in the global scope.
+    //
+    // This is tricky to achieve using eval in Javascript because Javascript is a lexically
+    // scoped language.  The workaround is to eval the definition of 'then' in the
+    // same lexical context where the lines of code are evaluated.
+    var make_repl = function () {
+      return {
+        result: undefined,
+        then: function () {
+          return {
+            result: eval(arguments[0]),
+            // Here's the trick:
+            then: eval('('+this.then+')'),
+          };
+        },
+      };
+    };
 
     var code = 
       '(function (\n' + arg_list + ') {\n' +
@@ -252,9 +286,7 @@
       '  return {\n' +
       '    functions: {\n' +
       functions + '    },\n' +
-      '    eval: function () {\n' +
-      '      return eval(arguments[0]);\n' +
-      '    },\n' +
+      '    repl: (' + make_repl + ')({}),\n' +
       '  };\n' +
       '})();';
     return eval(code);

@@ -9,7 +9,11 @@
     <h1>Javascript REPL and code editor using web workers</h1>
     <h2>Next on my todo list:</h2>
 	<ul>
-    <li>Plug the code editor panel into the web worker</li>
+    <li>Fix the REPL behaviour when the line extends to multiple lines.</li>
+    <li>Make the editor do something sensible with events raised by the webworker when compiling</li>
+    <li>Set <tt>this</tt> in the REPL</li>
+    <li>Handle returning function values in REPL</li>
+    <li>Create an overall manager for REPL and editors</li>
 	  <li>Fix focus management</li>
 	  <li>Improve Flexbox compatibility for older browsers</li>
 	</ul>
@@ -20,75 +24,75 @@
       </div>
     </div>
   </div>
-	<div id="editor-panel" data-collapsibleparentpanel-title="Editor Panel">
+	<div id="editor-panel" data-collapsibleparentpanel-title="hello_world">
 		<div class="yui3-widget-hd"></div>
 		<div class="yui3-widget-bd">
         <div class="yui3-aceEditor">
-          <div class="yui3-aceEditor-value" data-ace-read-only="true">(function ()
-  {</div>
+          <div class="yui3-aceEditor-value" data-ace-read-only="true">function hello_world() {</div>
         </div>
         <div class="yui3-aceEditor">
-          <div class="yui3-aceEditor-value" data-ace-flexbox="true" data-ace-show-gutter="true" data-ace-focused="true">// Everybody's favourite esoteric language.
-// Learn more at: http://en.wikipedia.org/wiki/Brainfuck
-
-function bf(source, input) {
-    var stack = [];
-    var output = "";
-    var input_index = 0; 
-    var cells = [0];
-    var c = 0;
-    for (var i = 0; i < source.length; ++i) {
-        var s = source[i];
-        if (stack[0] === null) {
-            switch (s) {
-                case '[':
-                    stack.unshift(null);
-                    break;
-                case ']':
-                    stack.shift();
-           }
-        } else {
-            switch (s) {
-                case '+':
-                    cells[c]++;
-                    break;
-                case '-':
-                    cells[c]--;
-                    break;
-                case '>':
-                    if (++c === cells.length) cells.push(0);
-                    break;
-                case '<':
-                    if (c) c--;
-                    else cells.unshift(0);
-                    break;
-                case '.':
-                    output += String.fromCharCode(cells[c]);
-                    break;
-                case ',':
-                    if (input_index < input.length) cells[c] = input.charCodeAt(input_index++);
-                    break;
-                case '[':
-                    stack.unshift(cells[c] ? i : null);
-                    break;
-                case ']':
-                    if (!stack.length) throw "unexpected ']'";
-                    if (!cells[c]) stack.shift();
-                    else i = stack[0];
-            }
+          <div class="yui3-aceEditor-value" data-ace-flexbox="true" data-ace-show-gutter="true" data-ace-focused="true">return (function () {
+  return {
+    result: arguments[0],
+    then:
+      (function (this_context) {
+        function (expression, continuation) {
+          return (function (expression, continuation) {
+            return continuation(eval(expression), this)
+          }).call(this_context, expression, continuation);
         }
-    }
-    if (stack.length) throw "missing ']'";
-    return output;
-}
+      })(arguments[1]),
+  };
+})(eval('var x = 2'), {}).then(
+  'x*=10; this.y=1',
+  function () {
+    return {
+    result: arguments[0],
+    then:
+      (function (this_context) {
+        function (expression, continuation) {
+          return (function (expression, continuation) {return continuation(eval(expression), this)}).call(this_context, expression, continuation);
+        }
+      })(arguments[1]),
+    };
+  }
+).then(
+  'x+=3;',
+  function () {
+    return {
+    result: arguments[0],
+    then:
+      (function (this_context) {
+        function (expression, continuation) {
+          return (function (expression, continuation) {
+            return continuation(eval(expression), this)
+          }).call(this_context, expression, continuation);
+        }
+      })(arguments[1]),
 
-console.log(bf('++++++++++[>+++++++>++++++++++>+++>+<<<<-]>++.>+.+++++++..+++.>++.<<+++++++++++++++.>.+++.------.--------.>+.>.[[-],.]', "This message brought to you by everybody's favourite esolang.")); </div>
+    };
+  }
+).then(
+  'x*=10;var arr = []; for (var name in this) if (this.hasOwnProperty(name)) arr.push(name);arr.length;"" + x + " " + arr.toString() + " " + expression',
+  function () {
+    return {
+    result: arguments[0],
+    then:
+      (function (this_context) {
+        function (expression, continuation) {
+          return (function (expression, continuation) {return continuation(eval(expression), this)}).call(this_context, expression, continuation);
+        }
+      })(arguments[1]),
+    };
+  }
+).result;</div>
         </div>
         <div class="yui3-aceEditor">
-          <div class="yui3-aceEditor-value" data-ace-read-only="true">})</div>
+          <div class="yui3-aceEditor-value" data-ace-read-only="true">}</div>
         </div>
       </div>
 		<div class="yui3-widget-ft"></div>
+	
   </div>
 
   <script src="<?php echo $YUI_CONFIG; ?>" type="text/javascript"></script>
@@ -116,6 +120,8 @@ console.log(bf('++++++++++[>+++++++>++++++++++>+++>+<<<<-]>++.>+.+++++++..+++.>+
          y: 200,
          worker: repl_panel.get('worker'),
 	     });
+       
+       repl_panel.get('worker').add_callout_functions({print: function () {console.log.apply(console, arguments)}});
 
        repl_panel.manager.create().add(panel);
 

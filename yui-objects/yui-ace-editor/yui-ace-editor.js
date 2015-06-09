@@ -61,7 +61,8 @@ YUI.add('yui-ace-editor', function(Y) {
         this.after('flexboxChange', Y.bind(this._afterFlexboxChange, this));
         this.after('showGutterChange', Y.bind(this._afterShowGutterChange, this));
         this._editor.on('change', Y.bind(this._onEditorChange, this));
-        this.after('focusedChange', Y.bind(this._afterFocusedChange, this));;
+        this.after('focusedChange', Y.bind(this._afterFocusedChange, this));
+        this._session.on('changeAnnotation', Y.bind(this._onChangeAnnotation, this));
       },
 
       syncUI : function() {
@@ -190,6 +191,18 @@ YUI.add('yui-ace-editor', function(Y) {
         this._editor.clearSelection();
         return this;
       },
+      
+      getAnnotations: function () {
+        return this._session.getAnnotations();
+      },
+    
+      validate: function () {
+        return this.get('validator')(this);
+      },
+      
+      _default_validator: function () {
+        if (this.get('readOnly')) return true;
+      },
 
 	    _doResize : function() {
 	      this._editor.resize();
@@ -203,6 +216,10 @@ YUI.add('yui-ace-editor', function(Y) {
         } else {
           editor.blur();
         }
+      },
+
+      _onChangeAnnotation: function () {
+        this.fire('changeAnnotation');
       },
 
     }, {
@@ -242,6 +259,15 @@ YUI.add('yui-ace-editor', function(Y) {
       EDITOR_NODE_TEMPLATE: '<div>{value}</div>',
       DEFAULT_READ_ONLY_THEME: 'dawn',
       DEFAULT_EDITABLE_THEME: 'chrome',
+      
+      DEFAULT_VALIDATOR: function (editor) {
+        if (editor.get('readOnly')) return true;
+        var annotations = editor.getAnnotations();
+        for (var i = 0; i < annotations.length; ++i) {
+          if (annotations[i].type === 'error') return false;
+        }
+        return true;
+      },
 
       // The attribute configuration for the widget.
       // This defines the core user facing state of the widget
@@ -263,6 +289,9 @@ YUI.add('yui-ace-editor', function(Y) {
             else return !!value;
           },
           value: false,
+        },
+        validator: {
+          valueFn: function () {return Y.RanRan.AceEditor.DEFAULT_VALIDATOR},
         },
         // Temporary attribute that is removed by
         // syncUI.
