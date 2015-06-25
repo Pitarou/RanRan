@@ -60,7 +60,7 @@ YUI.add('message-processor-test', function (Y) {
     
     var find_difference_test = new Y.Test.Case({
       name: "meta test: check that 'find difference' can accurately detect differences in complex objects",
-      setUp: function () {
+      init: function () {
         this.same = function(expect, actual) {
           if (find_difference(expect, actual)) {
             Y.Assert.fail('difference found where there should not be one');
@@ -211,7 +211,7 @@ YUI.add('message-processor-test', function (Y) {
       )},
     });
     
-    // So now we can check whether two objects are the same,
+    // Now we can check whether two objects are the same,
     // so we can check whether Y.RanRan.process_messages
     // is behaving itself.
 
@@ -220,10 +220,174 @@ YUI.add('message-processor-test', function (Y) {
     });
     
     process_messages_suite.add(find_difference_test);
-    
+
+    process_messages_suite.add(new Y.Test.Case({
+      name: 'normalize_to_list',
+      'empty list': function() {
+        var normalized = Y.RanRan.normalize_to_list([]);
+        Y.Assert.isArray(
+          normalized,
+          'normalize_to_list([]) should return an array'
+        );
+        Y.Assert.areSame(
+          0,
+          normalized.length,
+          'normalize_to_list([]) should return an empty array'
+        );
+      },
+
+      'non list argument': function() {
+        var normalized = Y.RanRan.normalize_to_list('foo');
+        Y.Assert.isArray(
+          normalized,
+          'normalize_to_list("foo") should return an array'
+        );
+        Y.Assert.areSame(
+          1,
+          normalized.length,
+          'normalize_to_list("foo") should return an array of length 1'
+        );
+        Y.Assert.areSame(
+          'foo',
+          normalized[0],
+          'normalize_to_list("foo") should return ["foo"]'
+        );
+      },
+
+      'arguments object argument': function() {
+        var args = (function () {return arguments})(1, 2, 3)
+        var normalized = Y.RanRan.normalize_to_list(args);
+        Y.Assert.isArray(
+          normalized,
+          'normalize_to_list(arguments_object) should return an array'
+        );
+        Y.Assert.areSame(
+          3,
+          normalized.length,
+          'normalize_to_list(arguments_object) returns an array of the correct size'
+        );
+        Y.Assert.areSame(
+          1,
+          normalized[0],
+          'normalize_to_list(arguments_object) returns an array with the first member the same as the first member of the arguments object'
+        );
+        Y.Assert.areSame(
+          3,
+          normalized[2],
+          'normalize_to_list(arguments_object) returns an array with the last member the same as the last member of the arguments object'
+        );
+      },
+
+      'ist argument': function() {
+        var arr = [1, 2, 3];
+        var normalized = Y.RanRan.normalize_to_list(arr);
+        Y.Assert.isArray(
+          normalized,
+          'normalize_to_list([1, 2, 3]) should return an array'
+        );
+        Y.Assert.areSame(
+          3,
+          normalized.length,
+          'normalize_to_list([1, 2, 3] returns an array of length 3'
+        );
+        Y.Assert.areSame(
+          1,
+          normalized[0],
+          'the first element of normalize_to_list([1, 2, 3]) is 1'
+        );
+        Y.Assert.areSame(
+          3,
+          normalized[2],
+          'the last element of normalize_to_list([1, 2, 3]) is 2'
+        );
+      },
+    }));
+
+    process_messages_suite.add(new Y.Test.Case({
+      name: 'normalize_handler_function_to_closure',
+      'string message': function() {
+        var closure = Y.RanRan.normalize_handler_function_to_closure(this, function(name, data) {
+          Y.Assert.areSame('name', name, 'name passed to closure when it is called with one argument');
+          Y.Assert.isUndefined(data, 'no data passed to closure when it is called with one argument')
+        });
+        closure('name');
+      },
+      'message with data': function() {
+        var closure = Y.RanRan.normalize_handler_function_to_closure(this, function(name, data) {
+          Y.Assert.areSame('name', name, 'name passed to closure when it is called with two arguments');
+          Y.Assert.areSame('data', data, 'data passed to closure when it is called with two arguments');
+        });
+        closure('name', 'data');
+      },
+      'message context': function() {
+        var context = {foo: 'bar'};
+        var closure = Y.RanRan.normalize_handler_function_to_closure(context, function(name, data) {
+          Y.Assert.areSame('bar', this.foo, 'context passed to closure')
+        });
+        closure('name', 'data');
+      },
+    }));
+
+    process_messages_suite.add(new Y.Test.Case({
+      name: 'normalize_handler_object_to_closure',
+      init: function() {
+        this.closure = Y.RanRan.normalize_handler_object_to_closure(this, {
+          message1: function(data) {
+            Y.Assert.fail('wrong message called');
+          },
+          message2: function(data) {
+            Y.Assert.isUndefined(data, 'no data should be passed');
+            this.mock.message2();
+          },
+          message3: function(data) {
+            Y.Assert.areSame('foo', data, 'message data passed to closure');
+            this.mock.message3();
+          },
+          message4: [
+            function(data) {
+              Y.Assert.areSame('bar', data, 'message data passed to first in list of functions');
+              this.mock.message4();
+            },
+            function(data) {
+              Y.Assert.areSame('bar', data, 'message data passed to last in list of functions')
+              this.mock.message4();
+            },
+          ],
+        });
+      },
+      setUp: function() {
+        this.mock = Y.Mock();
+      },
+      'string message': function() {
+        Y.Mock.expect(this.mock, {
+          method: 'message2',
+          args: [],
+        });
+        this.closure('message2');
+        Y.Mock.verify(this.mock);
+      },
+      'message with data': function() {
+        Y.Mock.expect(this.mock, {
+          method: 'message3',
+          args: [],
+        });
+        this.closure('message3', 'foo');
+        Y.Mock.verify(this.mock);
+      },
+      'message with data for list of functions': function() {
+        Y.Mock.expect(this.mock, {
+          method: 'message4',
+          args: [],
+          callCount: 2,
+        });
+        this.closure('message4', 'bar');
+        Y.Mock.verify(this.mock);
+      },
+    }));
+
     process_messages_suite.add(new Y.Test.Case({
       name: 'inert callback',
-      setUp: function () {
+      init: function() {
         this.run = function (messages) {
           Y.RanRan.process_messages(this, function () {}, messages);
           Y.Assert.pass('nothing broke');
@@ -247,10 +411,154 @@ YUI.add('message-processor-test', function (Y) {
         {another: ['test', 'message'], yet_another: 'test'},
       ]);},
     }));
+
+    process_messages_suite.add(new Y.Test.Case({
+      name: 'gather_all_handled_message_names',
+      'no messages': function() {
+        var gathered = Y.RanRan.gather_all_handled_message_names([]);
+        Y.Assert.isObject(gathered, 'returns an object');
+        Y.Assert.areSame(0, Object.keys(gathered).length, 'object is empty');
+      },
+      'many messages': function() {
+        var gathered = Y.RanRan.gather_all_handled_message_names([
+          {},
+          {'message1': null, 'message2': [null, null]}
+        ]);
+        Y.Assert.isObject(gathered, 'returns an object');
+        Y.Assert.areSame(2, Object.keys(gathered).length, 'reports correct number of keys');
+        Y.Assert.areSame(true, gathered.message1, 'reports object property key with non-list value');
+        Y.Assert.areSame(true, gathered.message2, 'reports object property key with list value');
+      },
+      'function message': function() {
+        var gathered = Y.RanRan.gather_all_handled_message_names([function() {}]);
+        Y.Assert.areSame(false, gathered, 'returns false');
+      },
+      'function message among other messages': function() {
+        var gathered = Y.RanRan.gather_all_handled_message_names([
+          {},
+          {'message1': null, 'message2': [null, null]},
+          function() {},
+        ]);
+        Y.Assert.areSame(false, gathered, 'returns false');
+      },
+    }));
+
+    process_messages_suite.add(new Y.Test.Case({
+      name: 'check_for_missing_handlers',
+      _should: {
+        error: {
+          'string message missing handler':
+            new TypeError(
+              "Y.RanRan.Worker: process_messages: no message handler for: 'missing message'"
+            ),
+          'object message missing handler':
+            new TypeError(
+              "Y.RanRan.Worker: process_messages: no message handler for: 'message2'"
+            ),
+          'mixed message missing handler':
+            new TypeError(
+              "Y.RanRan.Worker: process_messages: no message handler for: 'message2'"
+            ),
+        },
+      },
+      'no messages': function() {
+        Y.RanRan.check_for_missing_handlers({'message': true}, []);
+        Y.Assert.pass('passed');
+      },
+      'no messages function handler': function() {
+        Y.RanRan.check_for_missing_handlers(false, []);
+        Y.Assert.pass('passed')
+      },
+      'string message': function() {
+        Y.RanRan.check_for_missing_handlers({'message': true}, ['message']);
+        Y.Assert.pass('passed');
+      },
+      'string message missing handler': function() {
+        Y.RanRan.check_for_missing_handlers({'message': true}, ['missing message']);
+      },
+      'string message function handler': function() {
+        Y.RanRan.check_for_missing_handlers(false, ['message']);
+        Y.Assert.pass('passed');
+      },
+      'object message': function() {
+        var handlers = {'message1': true, 'message2': true, 'message3': true};
+        var messages = [{'message1': 'data1', 'message2': 'data2'}];
+        Y.RanRan.check_for_missing_handlers(handlers, messages);
+        Y.Assert.pass('passed');
+      },
+      'object message missing handler': function() {
+        var handlers = {'message1': true, 'message3': true};
+        var messages = [{'message1': 'data1', 'message2': 'data2'}];
+        Y.RanRan.check_for_missing_handlers(handlers, messages);
+      },
+      'object message function handler': function() {
+        var handlers = false;
+        var messages = [{'message1': 'data1', 'message2': 'data2'}];
+        Y.RanRan.check_for_missing_handlers(handlers, messages);
+        Y.Assert.pass('passed');
+      },
+      'mixed message': function() {
+        var handlers = {'message1': true, 'message2': true, 'message3': true};
+        var messages = ['message1', {'message2': 'data2', 'message3': 'data3'}];
+        Y.RanRan.check_for_missing_handlers(handlers, messages);
+        Y.Assert.pass('passed');
+      },
+      'mixed message missing handler': function() {
+        var handlers = {'message1': true, 'message3': true};
+        var messages = ['message1', {'message2': 'data2', 'message3': 'data3'}];
+        Y.RanRan.check_for_missing_handlers(handlers, messages);
+      },
+      'mixed message function handler': function() {
+        var handlers = false;
+        var messages = ['message1', {'message2': 'data2', 'message3': 'data3'}];
+        Y.RanRan.check_for_missing_handlers(handlers, messages);
+        Y.Assert.pass('passed');
+      },
+    }));
     
     process_messages_suite.add(new Y.Test.Case({
+      name: 'convert_handlers_to_closures',
+      'empty list': function() {
+        var closures = Y.RanRan.convert_handlers_to_closures(this, []);
+        Y.Assert.isArray(closures, 'returns array');
+        Y.Assert.areSame(0, closures.length, 'returned array is empty');
+      },
+      'populated list': function() {
+        var handlers = [
+          function(message, data) {
+            this.accumulator += message + data;
+          },
+          {
+            message1: function(data) {
+              this.accumulator += 'message1: ' + data;
+            },
+            message2: function(data) {
+              this.accumulator += 'message2: ' + data;
+            },
+          },
+        ];
+        this.accumulator = "";
+        var closures = Y.RanRan.convert_handlers_to_closures(this, handlers);
+        Y.Assert.isArray(closures, 'returns array');
+        Y.Assert.areSame(2, closures.length, 'returned array is correct size');
+        closures[0]('message', 'data'),
+        Y.Assert.areSame(
+          'messagedata',
+          this.accumulator,
+          'function handler is converted correctly, and context is passed'
+        );
+        closures[1]('message1', 'data'),
+        Y.Assert.areSame(
+          'messagedatamessage1: data',
+          this.accumulator,
+          'object handlers is converted correctly, and context is passed'
+        );
+      },
+    }));
+
+    process_messages_suite.add(new Y.Test.Case({
       name: 'accumulating callback',
-      setUp: function () {
+      init: function () {
         this.run = function (input, expected) {
           var accumulator = {};
           Y.RanRan.process_messages(this, function (name, data) {
@@ -280,7 +588,10 @@ YUI.add('message-processor-test', function (Y) {
         this.run(['test', 'message'], {test: undefined, message: undefined});
       },
       'list containing string messages and object messages with object content':
-        function () {this.run(['test', {another_test: 'message'}], {test: undefined, another_test: 'message'})},
+        function() {this.run(
+          ['test', {another_test: 'message'}],
+          {test: undefined, another_test: 'message'}
+        );},
       'mixed list': function () {this.run(
         ['test1', {test2: 'message2'}, {test3: ['message', 3], test4: 'message4'}],
         {test1: undefined, test2: 'message2', test3: ['message', 3], test4: 'message4'}
@@ -533,7 +844,7 @@ YUI.add('message-processor-test', function (Y) {
 
     process_messages_suite.add(new Y.Test.Case({
       name: 'using class instances as messages and handlers',
-      setUp: function () {
+      init: function () {
         function TestClass() {
         }
         TestClass.prototype.method = function () {
@@ -555,7 +866,7 @@ YUI.add('message-processor-test', function (Y) {
           {'property': function() {this.object.status = "property was called";}},
           this.object
         );
-        Y.Assert.areEqual(
+        Y.Assert.areSame(
           this.object.status,
           "property was called",
           "own property is handled"
@@ -570,7 +881,7 @@ YUI.add('message-processor-test', function (Y) {
       },
       testHandlerPrototypePropertyNotIgnored: function () {
         Y.RanRan.process_messages(this.object, this.object, 'method');
-        Y.Assert.areEqual(
+        Y.Assert.areSame(
           this.object.status,
           'method was called',
           'prototype properties of handlers are called'

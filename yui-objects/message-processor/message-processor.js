@@ -1,4 +1,4 @@
-// Process a (collection of) messages with a (collection of) handlers.
+// Process a (collection of) message(s) with a (collection of) handler(s).
 //
 //
 // Argument: context
@@ -23,7 +23,7 @@
 //
 //  * string "message":
 //
-//        handler("message_id")
+//        handler("message")
 //
 //  * object message {message_id: message_data}:
 //
@@ -136,7 +136,7 @@
 // process_messages iterates though the sequence of handlers
 //
 // For each handler, it iterates through the sequence of messages and,
-// when appropriate, calls processes the message with the handler.
+// when appropriate, processes the message with the handler.
 //
 // If the handler is an Array of callbacks then, for each time
 // it processes a message with this handler, it iterates through
@@ -326,7 +326,7 @@
 //     (function (handlers) {
 //       (function (messages) {
 //         process_messages(this, messages, handlers)
-//       }) ([append, APPEND]);
+//       }) (append, APPEND);
 //     })("a", "a", "b")
 //
 // results in accumulator looking like this:
@@ -428,18 +428,117 @@
 // Notice that the "print_with_prefix" method is ignored.
 
 (function () {
+
+  // Convert the argument to an Array.
+  //
+  // normalize_to_list(1) => [1]
+  // normalize_to_list([1,2,3]) => [1, 2, 3]
+  // (function () {
+  //   return normalize_to_list(arguments)
+  // })(1, 2, 3) => [1, 2, 3]
+  //
+  // The behaviour differs from [].concat(argument) in two
+  // important ways:
+  //
+  //  - When passed a list, it returns that list, rather than a copy.
+  //  - When passed an Arguments object, it converts that object to a true Array.
   function normalize_to_list(argument) {
     if (argument instanceof Array) {
       return argument;
     }
-    if (typeof argument === "object" && 
+    if (typeof argument === 'object' && 
         argument.constructor === Object &&
-        !argument.hasOwnProperty(toString) &&
-        argument.toString() === "[object Arguments]"
+        !argument.hasOwnProperty('toString') &&
+        argument.toString() === '[object Arguments]'
     ) {
       return Array.prototype.slice.call(argument);
     }
     return [argument];
+  }
+
+  function normalize_handler_function_to_closure(context, func) {
+    return function (message_name, message_data) {
+      if (arguments.length === 1) {
+        func.call(context, message_name);
+      } else {
+        func.call(context, message_name, message_data);
+      }
+    };
+  }
+
+  function normalize_handler_object_to_closure(context, object) {
+    return function(message_name, message_data) {
+      var object_data = object[message_name];
+      if (typeof(object_data) !== 'undefined') {
+        [].concat(object_data).forEach(function (func) {
+          if (arguments.length === 1) {
+            func.call(context)
+          } else {
+            func.apply(context, [].concat(message_data));
+          }
+        })
+      }
+    };
+  }
+
+  // If the list of handlers includes a function, return false,
+  // because a function can handle any message. Otherwise return
+  // the set of message names handled as a dict like this:
+  //
+  //    {message_1: true, message_2: true, ...}
+  function gather_all_handled_message_names(handlers) {
+    var all_names = {};
+    // Can't use Array.prototype.forEach here because
+    // of the return false statement.
+    for (var i = 0; i < handlers.length; ++i) {
+      var handler = handlers[i];
+      if (typeof(handler) === 'function') {
+        return false;
+      }
+      for (var name in handler) {
+        all_names[name] = true;
+      }
+    }
+    return all_names;
+  }
+
+  function check_for_missing_handlers(all_handled_message_names, messages) {
+    if (!all_handled_message_names) {
+      return;
+    }
+    var missing_handlers = [];
+    function check_name(message_name) {
+      if (!all_handled_message_names[message_name]) {
+        missing_handlers.push(message_name);
+      }
+    }
+    messages.forEach(function(message) {
+      if (typeof(message) === 'string') {
+        check_name(message);
+      } else {
+        for (var message_name in message) {
+          if (message.hasOwnProperty(message_name)) {
+            check_name(message_name);
+          }
+        }
+      }
+    })
+    if (missing_handlers.length !== 0) {
+      error_message = "Y.RanRan.Worker: process_messages: no message handler for: '";
+      error_message += missing_handlers.join("', '");
+      error_message += "'";
+      throw new TypeError(error_message);
+    }
+  }
+
+  function convert_handlers_to_closures(context, handlers) {
+    return handlers.map(function(handler) {
+      if (typeof(handler) === 'function') {
+        return normalize_handler_function_to_closure(context, handler);
+      } else {
+        return normalize_handler_object_to_closure(context, handler);
+      }
+    })
   }
 
   function process_messages(context, handlers, messages, ignore_missing_handlers) {
@@ -453,129 +552,49 @@
       throw TypeError('Y.RanRan.Worker: process_messages: handlers is undefined');
     }
 
-    // normalise a handler object or function to a list of callbacks
-    var handler_list = normalize_to_list(handlers);
-    var callbacks = [];
+    handlers = normalize_to_list(handlers);
+    messages = normalize_to_list(messages);
 
-    // accumulate a set of all handler_names, so that we can quickly check for
-    // messages that cannot be handled
-    var check_handler_names = ignore_missing_handlers ? false : {};
-  
-    for (var handler_index = 0; handler_index < handler_list.length; handler_index++) {
-      var handler = handler_list[handler_index];
-      // normalise the handler object or function to a callback
-      var callback;
-      // put the handler in a closure, so the generated
-      // callbacks each point to a different version of handler
-      (function (handler) {
-        if (typeof(handler) === "function") {
-          // there is no risk of unhandled callbacks
-          check_handler_names = false;
-          // we already have the function we need, so we just
-          // need to make sure it's applied in the correct context
-          // and handles plain strings appropriately
-          callback = function (message_name, message_data) {
-            if (arguments.length === 1) {
-              handler.call(context, message_name);
-            } else {
-              handler.call(context, message_name, message_data);
-            }
-          };
-        } else {
-          // if we are checking for missing handlers
-          // we need to add this handler's message_names
-          // to the set
-          if (check_handler_names) {
-            for (var handler_name in handler) {
-              check_handler_names[handler_name] = true;
-            }
-          }
-          // the callback is a function that looks up the correct function(s)
-          // in the handler object
-          callback = function(message_name, message_data) {
-            var handler_data = handler[message_name];
-            if (typeof(handler_data) !== "undefined") {
-              // normalise function(s) to a list, and iterate through the list
-              var function_list = [].concat(handler_data);
-              for (var function_list_index = 0; function_list_index < function_list.length; ++function_list_index) {
-                handler_function = function_list[function_list_index];
-                if (arguments.length === 1) {
-                  handler_function.call(context)
-                } else {
-                  handler_function.apply(context, [].concat(message_data));
-                }
-              }
-            }
-          }
-        }
-      })(handler);
-      callbacks.push(callback);
+    if (!ignore_missing_handlers) {
+      var message_names = gather_all_handled_message_names(handlers);
+      check_for_missing_handlers(message_names, messages);
     }
-        
-    // normalise the messages to a list
-    var message_list = normalize_to_list(messages);
   
-    // check for any missing handlers
-    if (check_handler_names) {
-      var missing_handlers = false;
-      function check_name(message_name) {
-        if (!check_handler_names[message_name]) {
-          if (!missing_handlers) {
-            missing_handlers = {};
-          }
-          missing_handlers[message_name] = true;
-        }
-      }
-      for (var i = 0; i < message_list.length; ++i) {
-        var message = message_list[i];
-        if (typeof(message) === "string") {
-          check_name(message);
-        } else {
-          for (var message_name in message) {
-            if (message.hasOwnProperty(message_name)) {
-              check_name(message_name);
-            }
-          }
-        }
-      }
-      if (missing_handlers) {
-        error_message = "Y.RanRan.Worker: process_messages: no message handler for:"
-        for (var message_name in missing_handlers) {
-          if (missing_handlers.hasOwnProperty(message_name)) {
-            error_message += " '"+message_name+"'";
-          }
-        }
-        throw new TypeError(error_message);
-      }
-    }
+    var closures = convert_handlers_to_closures(context, handlers);
 
-    // process the messages with the callbacks  
-    for (var callback_index = 0; callback_index < callbacks.length; ++callback_index) {
-      var callback = callbacks[callback_index];
-      for (var message_index = 0; message_index < message_list.length; ++message_index) {
-        var message_object = message_list[message_index];
-        if (typeof(message_object) === "string") {
-          callback(message_object);
+    // process the messages with the closures 
+    closures.forEach(function(closure) {
+      messages.forEach(function(message) {
+        if (typeof(message) === 'string') {
+          closure(message);
         } else {
-          for (message_name in message_object) {
+          for (message_name in message) {
             // protection from monkey patched Object prototype
-            if (message_object.hasOwnProperty(message_name)) {
-              var message_data = message_object[message_name]
-              callback(message_name, message_data);
+            if (message.hasOwnProperty(message_name)) {
+              var message_data = message[message_name];
+              closure(message_name, message_data);
             }
           }
         }
-      }
-    }
+      });      
+    });
   }
 
   // If YUI is defined, add the function to YUI's RanRan namespace.
   // If it isn't, assume we are in a WebWorker, and
-  // export it to the global namespace.
+  // export it to the worker's global namespace.
   if (typeof(YUI) !== 'undefined') {
     YUI.add('message-processor', function (Y) {
-      Y.namespace("RanRan");
+      Y.namespace('RanRan');
       Y.RanRan.process_messages = process_messages;
+      if (Y.config.debug) {
+        Y.RanRan.normalize_to_list = normalize_to_list;
+        Y.RanRan.normalize_handler_object_to_closure = normalize_handler_object_to_closure;
+        Y.RanRan.normalize_handler_function_to_closure = normalize_handler_function_to_closure;
+        Y.RanRan.check_for_missing_handlers = check_for_missing_handlers;
+        Y.RanRan.gather_all_handled_message_names = gather_all_handled_message_names;
+        Y.RanRan.convert_handlers_to_closures = convert_handlers_to_closures;
+      }
     });
   } else {
     self.process_messages = process_messages;
