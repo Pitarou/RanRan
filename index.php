@@ -103,7 +103,10 @@
     <script type="text/javascript">
     
      // For some weird reason, I can't just make a single '.use' call.  I have to stage the loading.
-     YUI().use('ranran-base', 'console').use('node', 'dd-plugin', 'yui-ace-editor').use('editor-panel', 'worker', 'worker-test', 'message-processor-test', 'collapsible-parent-panel', 'history-manager', 'history-manager-test', 'repl-panel', 'panel-manager', 'panel-manager-test', function(Y) {
+     YUI({debug: <?php echo $PRODUCTION ? "false" : "true" ?>})
+          .use('ranran-base', 'console')
+          .use('node', 'dd-plugin', 'yui-ace-editor')
+          .use('editor-panel', 'worker', 'worker-test', 'message-processor-test', 'collapsible-parent-panel', 'history-manager', 'history-manager-test', 'repl-panel', 'panel-manager', 'panel-manager-test', function(Y) {
 
        repl_panel = new Y.RanRan.REPLPanel({
          srcNode: '#collapsible-panel',
@@ -134,6 +137,5 @@
        });
 	  });
 	</script>
-
   </body>
 </html>

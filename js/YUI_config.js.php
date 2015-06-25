@@ -1,7 +1,11 @@
+<?php require_once('../config.php'); ?>
+<?php js_header() ?>
+
+
 (function () {
 
   // PRODUCTION overrides ADD_TESTS_BY_DEFAULT
-  var PRODUCTION = false;
+  var PRODUCTION = <?php echo $PRODUCTION ? "true" : "false" ?>;
   var ADD_TESTS_BY_DEFAULT = false;
 
   // Create YUI_config.groups if it doesn't exist.
