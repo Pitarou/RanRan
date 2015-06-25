@@ -113,7 +113,7 @@
          render: true,
          collapsed: false,
          worker: new Y.RanRan.Worker(),
-         y: 50,
+         y: 150,
        });
 
 	     panel = new Y.RanRan.EditorPanel({
@@ -121,7 +121,7 @@
 	       render: true,
 	       collapsed: false,
          x: 400,
-         y: 200,
+         y: 250,
          worker: repl_panel.get('worker'),
 	     });
        
