@@ -4,7 +4,7 @@
 <html>
   <head>
     <title>Javascript REPL and code editor using web workers</title>
-    <link rel="shortcut icon" href="/panda-icon.gif" />
+    <link rel="shortcut icon" href="/panda-icon.png" />
   </head>
   <body class="yui3-skin-sam">
     <h1>Javascript REPL and code editor using web workers</h1>
